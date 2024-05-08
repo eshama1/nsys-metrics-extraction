@@ -2,7 +2,7 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from helper.general import remove_outliers, generate_statistics, MAX_WORKERS
 
-QUERY_KERNEL_NAMES = """ 
+QUERY_KERNEL = """ 
 WITH
     summary AS (
         SELECT

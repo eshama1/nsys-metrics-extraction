@@ -79,14 +79,6 @@ WHERE
     name = ?
 """
 
-def generate_transfer_queries(transfer_name):
-    queries = []
-
-    for name in transfer_name:
-        queries.append((QUERY_TRANSFERS_STATS, name))
-
-    return queries
-
 def generate_transfer_stats(transfers):
     frequency_distro = np.zeros(10)
     bandwidth_distro = [[] for _ in range(10)]
@@ -145,7 +137,7 @@ def generate_transfer_stats(transfers):
     return transfers[0], transfer_data
 
 
-def parallel_parse_kernel_data(queries_res):
+def parallel_parse_transfer_data(queries_res):
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for data in queries_res:

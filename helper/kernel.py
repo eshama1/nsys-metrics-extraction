@@ -29,19 +29,26 @@ FROM
 LEFT JOIN
     StringIds AS ids
     ON ids.id = summary.nameId
+ORDER BY 2 DESC
 """
 QUERY_KERNEL_STATS = """
 WITH
     kernel_summary AS (
         SELECT
-            shortname AS kernel_id,
+            KERNEL.shortname AS kernel_id,
             KERNEL.end - KERNEL.start AS execution_time,
-            RUNTIME.end - RUNTIME.start AS launch_overhead,
-            KERNEL.start - RUNTIME.end AS slack
+            CASE
+                WHEN RUNTIME.correlationId IS NOT NULL THEN RUNTIME.end - RUNTIME.start
+                ELSE NULL 
+            END AS launch_overhead,
+            CASE
+                WHEN RUNTIME.correlationId IS NOT NULL THEN KERNEL.start - RUNTIME.end
+                ELSE NULL
+            END AS slack
         FROM
-            CUPTI_ACTIVITY_KIND_RUNTIME AS RUNTIME
-        JOIN
             CUPTI_ACTIVITY_KIND_KERNEL AS KERNEL
+        LEFT JOIN
+            CUPTI_ACTIVITY_KIND_RUNTIME AS RUNTIME
         ON
             RUNTIME.correlationId = KERNEL.correlationId
         JOIN
@@ -74,40 +81,38 @@ def parse_kernel_data(data):
     raw_duration_data = []
     raw_overhead_data = []
     raw_slack_data = []
+    runtime_values = True
 
     for id, duration, overhead, slack in data[1]:
         raw_duration_data.append(duration) if duration > 0 else 0
-        raw_overhead_data.append(overhead) if overhead > 0 else 0
-        raw_slack_data.append(slack) if slack > 0 else 0
 
-    if raw_overhead_data:
-        remove_outliers(raw_overhead_data)
-    if raw_slack_data:
-        remove_outliers(raw_slack_data)
+        if overhead is None or slack is None:
+            runtime_values = False
+        else:
+            raw_overhead_data.append(overhead) if overhead > 0 else 0
+            raw_slack_data.append(slack) if slack > 0 else 0
+
+
+
+    if runtime_values:
+        if raw_overhead_data:
+            remove_outliers(raw_overhead_data)
+        if raw_slack_data:
+            remove_outliers(raw_slack_data)
 
     results_dict = {}
     results_dict.update(generate_statistics(raw_duration_data, 'Execution Duration'))
-    results_dict.update(generate_statistics(raw_overhead_data, 'Launch Overhead'))
-    results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
 
-    if len(raw_slack_data) == 1 and raw_slack_data[0] == 0:
-        results_dict.update( {
-            'Raw Data': 0,
-            'Mean Duration': 0,
-            'Median Duration': 0,
-            'Minimum Duration': 0,
-            'Maximum Duration': 0,
-            'Standard Deviation': 0
-        })
-        raw_slack_data.append(0)
-    else:
+    if runtime_values:
+        results_dict.update(generate_statistics(raw_overhead_data, 'Launch Overhead'))
         results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
+    else:
+        results_dict['Launch Overhead'] = None
+        results_dict['Slack'] = None
 
     if raw_duration_data:
         freq = len(raw_duration_data)
-        dom = np.median(raw_duration_data) * freq
         results_dict['Frequency'] = freq
-        results_dict['Dominance'] = dom
 
     return id, results_dict
 
@@ -120,3 +125,25 @@ def parallel_parse_kernel_data(queries_res):
             futures.append(future)
         results = [future.result() for future in futures]
     return results
+
+
+
+def create_general_duration_kernel_stats(kernel_stats):
+
+
+    return None
+
+def create_general_overhead_kernel_stats(kernel_stats):
+
+
+    return None
+
+def create_general_slack_kernel_stats(kernel_stats):
+
+
+    return None
+
+def create_general_kernel_stats(kernel_stats):
+
+
+    return None

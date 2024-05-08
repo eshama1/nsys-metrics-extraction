@@ -1,32 +1,99 @@
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
-
 from helper.general import generate_statistics, MAX_WORKERS
 
 QUERY_TRANSFERS = """
-    SELECT 
-        CASE 
-            WHEN copyKind = 1 THEN 'DtH' 
-            WHEN copyKind = 2 THEN 'HtD' 
-            WHEN copyKind = 8 THEN 'DtD' 
-            WHEN copyKind = 10 THEN 'PtP' 
-            ELSE 'Unknown' 
-        END AS transfer_type,
-        bytes, start, end
-    FROM 
-        CUPTI_ACTIVITY_KIND_MEMCPY 
-    WHERE 
-        copyKind IN (1, 2, 8, 10)
+WITH
+    MemcpyOperStrs AS (SELECT * FROM ENUM_CUDA_MEMCPY_OPER),
+    memops AS (
+        SELECT
+            mos.label AS name,
+            mcpy.end - mcpy.start AS duration,
+            mcpy.bytes AS size
+        FROM
+            CUPTI_ACTIVITY_KIND_MEMCPY as mcpy
+        INNER JOIN
+            MemcpyOperStrs AS mos
+            ON mos.id == mcpy.copyKind
+
+        UNION ALL
+        SELECT
+            'Memset' AS name,
+            end - start AS duration,
+            bytes AS size
+        FROM
+            CUPTI_ACTIVITY_KIND_MEMSET
+    ),
+    summary AS (
+        SELECT
+            name AS name,
+            sum(duration) AS time_total,
+            sum(size) AS mem_total,
+            count(*) AS num
+        FROM
+            memops
+        GROUP BY 1
+    ),
+    totals AS (
+        SELECT sum(time_total) AS time_total FROM summary
+    )
+SELECT
+    summary.name AS "Operation",
+    round(summary.time_total * 100.0 / (SELECT time_total FROM totals), 1) AS "Time:ratio_%",
+    summary.time_total AS "Total Time:dur_ns",
+    summary.mem_total AS "Total:mem_B",
+    summary.num AS "Count"
+FROM
+    summary
+ORDER BY 2 DESC
 """
 
+QUERY_TRANSFERS_STATS = """
+WITH
+    MemcpyOperStrs AS (SELECT * FROM ENUM_CUDA_MEMCPY_OPER),
+    transfers AS (
+        SELECT
+            mos.label AS name,
+            mcpy.end - mcpy.start AS duration,
+            mcpy.bytes AS size
+        FROM
+            CUPTI_ACTIVITY_KIND_MEMCPY as mcpy
+        INNER JOIN
+            MemcpyOperStrs AS mos
+            ON mos.id == mcpy.copyKind
+        UNION ALL
+        SELECT
+            'Memset' AS name,
+            end - start AS duration,
+            bytes AS size
+        FROM
+            CUPTI_ACTIVITY_KIND_MEMSET
+    )
+SELECT
+    name AS "Name",
+    duration AS "Duration",
+    size AS "Size"
+FROM
+    transfers
+WHERE
+    name = ?
+"""
 
-def generate_transfer_stats(transfers, label):
+def generate_transfer_queries(transfer_name):
+    queries = []
+
+    for name in transfer_name:
+        queries.append((QUERY_TRANSFERS_STATS, name))
+
+    return queries
+
+def generate_transfer_stats(transfers):
     frequency_distro = np.zeros(10)
     bandwidth_distro = [[] for _ in range(10)]
     transfer_sizes = []
     transfer_durations = []
 
-    for size, duration in transfers:
+    for _, size, duration in transfers[1]:
         transfer_sizes.append(size)
         transfer_durations.append(duration)
 
@@ -75,63 +142,14 @@ def generate_transfer_stats(transfers, label):
     transfer_data['Frequency Distribution'] = frequency_distro.tolist()
     transfer_data['Bandwidth Distribution'] = bandwidth_distro
 
-    return (label, transfer_data)
+    return transfers[0], transfer_data
 
 
-def parse_transfer_data(transfer_query_res):
-    # Initialize empty lists for each transfer type
-    DtH_transfers = []
-    HtD_transfers = []
-    DtD_transfers = []
-    PtP_transfers = []
-
-    # Iterate through the results and sort them into respective lists based on transfer type
-    for transfer_type, bytes, start, end in transfer_query_res:
-        if transfer_type == 'DtH':
-            DtH_transfers.append((bytes, end - start))
-        elif transfer_type == 'HtD':
-            HtD_transfers.append((bytes, end - start))
-        elif transfer_type == 'DtD':
-            DtD_transfers.append((bytes, end - start))
-        elif transfer_type == 'PtP':
-            PtP_transfers.append((bytes, end - start))
-
-    res = generate_transfer_stats(DtH_transfers)
-
-    return DtH_transfers, HtD_transfers, DtD_transfers, PtP_transfers
-
-
-def parallel_parse_transfer_data(transfer_query_res):
-    DtH_transfers = []
-    HtD_transfers = []
-    DtD_transfers = []
-    PtP_transfers = []
-    for transfer_type, bytes, start, end in transfer_query_res:
-        if transfer_type == 'DtH':
-            DtH_transfers.append((bytes, end - start))
-        elif transfer_type == 'HtD':
-            HtD_transfers.append((bytes, end - start))
-        elif transfer_type == 'DtD':
-            DtD_transfers.append((bytes, end - start))
-        elif transfer_type == 'PtP':
-            PtP_transfers.append((bytes, end - start))
-
-    def generate_stats(transfer_list, label):
-        return generate_transfer_stats(transfer_list, label)
-
+def parallel_parse_kernel_data(queries_res):
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
-        # Submit tasks for each transfer type
-        futures.append(executor.submit(generate_stats, DtH_transfers, 'DtH'))
-        futures.append(executor.submit(generate_stats, HtD_transfers, 'HtD'))
-        futures.append(executor.submit(generate_stats, DtD_transfers, 'DtD'))
-        futures.append(executor.submit(generate_stats, PtP_transfers, 'PtP'))
-
-        # Wait for all tasks to complete and get the results
+        for data in queries_res:
+            future = executor.submit(generate_transfer_stats, data)
+            futures.append(future)
         results = [future.result() for future in futures]
-
-    transfer_stats = {}
-    for transfer_type, result in results:
-        transfer_stats[transfer_type] = result
-
-    return transfer_stats
+    return results

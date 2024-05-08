@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 MAX_WORKERS = 12
 
-
 def execute_query(conn, query, params=None):
     cursor = conn.cursor()
     if params:
@@ -19,18 +18,6 @@ def execute_query(conn, query, params=None):
     return key, result
 
 
-def execute_queries_parallel(queries_with_params, database_file):
-    results = []
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = []
-        for query_params in queries_with_params:
-            future = executor.submit(execute_query_in_thread, query_params, database_file)
-            futures.append(future)
-        for future in as_completed(futures):
-            results.append(future.result())
-    return results
-
-
 def execute_query_in_thread(query_params, database_file):
     conn = sqlite3.connect(database_file)  # Create a new connection object in each thread
     try:
@@ -42,16 +29,16 @@ def execute_query_in_thread(query_params, database_file):
     return result
 
 
-def clean_data(query_results, kernel_stats):
-    for sublist in query_results[:]:
-        # Check if the second element of the sublist is an empty list
-        if not sublist[1]:
-            # If it's empty, remove it from kernel_statistics
-            kernel_stats.pop(sublist[0], None)
-            # Also remove the sublist from kernel_queries_res
-            query_results.remove(sublist)
-
-    return query_results, kernel_stats
+def execute_queries_parallel(queries_with_params, database_file):
+    results = []
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = []
+        for query_params in queries_with_params:
+            future = executor.submit(execute_query_in_thread, query_params, database_file)
+            futures.append(future)
+        for future in as_completed(futures):
+            results.append(future.result())
+    return results
 
 
 def remove_outliers(data):

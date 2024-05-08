@@ -1,26 +1,11 @@
-# This script extracts a few metrics about the GPU applications.
-# Copyright (C) 2024 Ethan Shama
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#########################################################################
-
-import os
-import sys
 import json
 import matplotlib
 import multiprocessing
 from absl import app, flags, logging
 from collections import OrderedDict
+
+from helper.kernel import QUERY_KERNEL_NAMES, generate_kernel_queries, parallel_parse_kernel_data
+from helper.transfer import parallel_parse_kernel_data, generate_transfer_queries, QUERY_TRANSFERS
 
 matplotlib.use("pgf")
 matplotlib.rcParams.update({
@@ -30,11 +15,8 @@ matplotlib.rcParams.update({
     'text.usetex': True,
     'pgf.rcfonts': False,
 })
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
 
-
-from helper import *
+from helper.general import *
 
 flags.DEFINE_string('data_file', None, "Data Base file for extraction (sqlite)", short_name='df')
 flags.DEFINE_boolean('kernel_metrics', False, "export kernel metrics", short_name='km')
@@ -44,75 +26,71 @@ flags.DEFINE_integer('max_workers', None, "Number of threads to split work (Defa
 FLAGS = flags.FLAGS
 
 
-def extract_and_save_data():
+def create_statistics_from_file():
     kernel_statistics = {}
     transfer_statistics = {}
-    kernel_names = []
-    kernel_labels = []
+    full_statistics = {}
+    kernel_ids = []
+    transfer_names = []
 
     database_file = FLAGS.data_file
+
+    if not FLAGS.kernel_metrics:
+        res = execute_query_in_thread((QUERY_KERNEL_NAMES, None), database_file)
+        for id, time_percent, time_total, instance, name in res[1]:
+            kernel_ids.append(id)
+            kernel_statistics[id] = {'Name': name, 'Time Percent': time_percent, 'Time Total': time_total, 'Instance': instance}
+
+        kernel_queries = generate_kernel_queries(kernel_ids)
+
+        kernel_queries_res = execute_queries_parallel(kernel_queries, database_file)
+        results = parallel_parse_kernel_data(kernel_queries_res)
+
+        for id, dict in results:
+            kernel_statistics[id].update(dict)
+
+        kernel_statistics = OrderedDict(sorted(kernel_statistics.items(), key=lambda item: item[1]['Time Total'], reverse=True))
+
+        full_statistics['Kernel Statistics'] = {'Individual Kernels': kernel_statistics}
+
+    if FLAGS.transfer_metrics:
+        res = execute_query_in_thread((QUERY_TRANSFERS, None), database_file)
+        for type, time_percent, time_total, mem_total, instance in res[1]:
+            transfer_names.append(type)
+            transfer_statistics[type] = {'Type': type, 'Time Percent': time_percent, 'Time Total': time_total, 'Instance': instance}
+
+        transfer_queries = generate_transfer_queries(transfer_names)
+        transfer_query_res = execute_queries_parallel(transfer_queries, database_file)
+        results = parallel_parse_kernel_data(transfer_query_res)
+
+        for id, dict in results:
+            transfer_statistics[id].update(dict)
+
+        transfer_statistics = OrderedDict(sorted(transfer_statistics.items(), key=lambda item: item[1]['Time Total'], reverse=True))
+
+
+    if FLAGS.save_data and full_statistics:
+        database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'
+        with open(database_file_JSON, 'w') as json_file:
+            json.dump(full_statistics, json_file, indent=4)
+
+    return full_statistics
+
+
+def run(args):
+    app_statistics = create_statistics_from_file()
 
     # with open('parsed_kernel_stats.json', 'r') as json_file:
     #     # Load the JSON data into a dictionary
     #     temp = json.load(json_file, parse_float=float)
 
-    if FLAGS.kernel_metrics:
-        res = execute_query_in_thread((QUERY_KERNEL_NAMES, None), database_file)
-        for item in res[1]:
-            kernel_names.append(item)
-            label_tmp = '{},{},{},{},{},{},{}'.format(*item[:7])
-            kernel_labels.append(label_tmp)
-            kernel_statistics[label_tmp] = {'Kernel Name': item[0],
-                                            'Kernel Config': '{},{},{},{},{},{}'.format(*item[1:])}
+    # with open('single_node_single_gpu_parsed_kernel_stats.json', 'r') as json_file:
+    #     kernel_statistics = OrderedDict(json.load(json_file, parse_float=float))
+    # with open('single_node_single_gpu_parsed_transfer_stats.json', 'r') as json_file:
+    #     transfer_statistics = json.load(json_file, parse_float=float)
 
-        ker_exec_duration_query, ker_launch_overhead_query, ker_slack_query = generate_kernel_queries(kernel_names)
+    print("kernel_statistics")
 
-        ker_exec_duration_res = execute_queries_parallel(ker_exec_duration_query, database_file)
-        ker_launch_overhead_res = execute_queries_parallel(ker_launch_overhead_query, database_file)
-        ker_slack_res = execute_queries_parallel(ker_slack_query, database_file)
-
-        # Parse duration results
-        results = parallel_parse_kernel_data(ker_exec_duration_res, label="Execution Duration", duration=True)
-        merge_duration_results(kernel_statistics, results)
-
-        # Parse duration results
-        results = parallel_parse_kernel_data(ker_launch_overhead_res, label="Launch Overhead", overhead=True)
-        merge_results(kernel_statistics, results)
-
-        # Parse slack results
-        results = parallel_parse_kernel_data(ker_slack_res, label="Slack", slack=True)
-        merge_results(kernel_statistics, results)
-
-        kernel_statistics = OrderedDict(sorted(kernel_statistics.items(), key=lambda item: item[1]['Dominance'], reverse=True))
-
-        if FLAGS.save_data:
-            database_file_JSON = database_file.split('.')[0] + '_parsed_kernel_stats.json'
-            with open(database_file_JSON, 'w') as json_file:
-                json.dump(kernel_statistics, json_file)
-
-    if FLAGS.transfer_metrics:
-        transfer_query_res = execute_query_in_thread((QUERY_TRANSFERS, None), database_file)
-        transfer_statistics = parallel_parse_transfer_data(transfer_query_res[1])
-
-        if FLAGS.save_data:
-            database_file_JSON = database_file.split('.')[0] + '_parsed_transfer_stats.json'
-            with open(database_file_JSON, 'w') as json_file:
-                json.dump(transfer_statistics, json_file)
-
-    return kernel_statistics, transfer_statistics
-
-def run(args):
-    #kernel_statistics, transfer_statistics = extract_and_save_data()
-
-    nvida = execute_query_in_thread((query_stub, None), FLAGS.data_file)
-
-
-    with open('single_node_single_gpu_parsed_kernel_stats.json', 'r') as json_file:
-        kernel_statistics = OrderedDict(json.load(json_file, parse_float=float))
-    with open('single_node_single_gpu_parsed_transfer_stats.json', 'r') as json_file:
-        transfer_statistics = json.load(json_file, parse_float=float)
-
-    print(kernel_statistics)
 
 def main(argv):
     args = FLAGS

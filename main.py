@@ -84,26 +84,6 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
 
     return statistics
 
-def create_communication_metrics(database_file):
-    communication_statistics = {}
-    communication_names = []
-
-    res = execute_query_in_thread((QUERY_COMMUNICATION, None), database_file)
-    for name, time_percent, time_total, instance in res[1]:
-        communication_names.append(name)
-        communication_statistics[name] = {'Name': name, 'Time Percent': time_percent, 'Time Total': time_total,
-                                          'Instance': instance}
-
-    generate_queries(QUERY_COMMUNICATION_STATS, communication_names)
-    # transfer_queries = generate_transfer_queries(transfer_names)
-    # transfer_query_res = execute_queries_parallel(transfer_queries, database_file)
-    # results = parallel_parse_kernel_data(transfer_query_res)
-    # for id, dict in results:
-    #     transfer_statistics[id].update(dict)
-    #
-    # transfer_statistics = OrderedDict( sorted(transfer_statistics.items(), key=lambda item: item[1]['Time Total'], reverse=True))
-    return communication_statistics
-
 
 def create_statistics_from_file():
     full_statistics = {}
@@ -117,14 +97,14 @@ def create_statistics_from_file():
         transfer_statistics = create_statistics(database_file, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, metric_type=TRANSFER_STATS)
         full_statistics['Transfer Statistics'] = transfer_statistics
 
-    # if FLAGS.no_communication_metrics:
-    #     comm_statistics = create_statistics(database_file, QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS, metric_type=COMMUNICATION_STATS)
-    #     full_statistics['Communication Statistics'] = comm_statistics
+    if not FLAGS.no_communication_metrics:
+        comm_statistics = create_statistics(database_file, QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS, metric_type=COMMUNICATION_STATS)
+        full_statistics['Communication Statistics'] = comm_statistics
 
-    # if FLAGS.no_save_data and full_statistics:
-    #     database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'
-    #     with open(database_file_JSON, 'w') as json_file:
-    #         json.dump(full_statistics, json_file, indent=4)
+    if FLAGS.no_save_data and full_statistics:
+        database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'
+        with open(database_file_JSON, 'w') as json_file:
+            json.dump(full_statistics, json_file, indent=4)
 
     return full_statistics
 

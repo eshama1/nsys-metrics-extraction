@@ -92,8 +92,6 @@ def parse_kernel_data(data):
             raw_overhead_data.append(overhead) if overhead > 0 else 0
             raw_slack_data.append(slack) if slack > 0 else 0
 
-
-
     if runtime_values:
         if raw_overhead_data:
             remove_outliers(raw_overhead_data)

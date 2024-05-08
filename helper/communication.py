@@ -1,5 +1,9 @@
+import numpy as np
+from concurrent.futures import ThreadPoolExecutor
+from helper.general import generate_statistics, MAX_WORKERS
 
-QUERY_COMMUNICATION_STATS = """
+
+QUERY_COMMUNICATION = """
 WITH
     domains AS (
         SELECT
@@ -63,12 +67,7 @@ WITH
             tag AS name,
             style AS style,
             sum(duration) AS total,
-            count(*) AS num,
-            avg(duration) AS avg,
-            median(duration) AS med,
-            min(duration) AS min,
-            max(duration) AS max,
-            stdev(duration) AS stddev
+            count(*) AS num
         FROM
             nvtx
         GROUP BY 1, 2
@@ -77,23 +76,17 @@ WITH
         SELECT sum(total) AS total
         FROM summary
     )
-
     SELECT
+        name AS "Name",
         round(total * 100.0 / (SELECT total FROM totals), 1) AS "Time:ratio_%",
         total AS "Total Time:dur_ns",
-        num AS "Instances",
-        round(avg, 1) AS "Avg:dur_ns",
-        round(med, 1) AS "Med:dur_ns",
-        min AS "Min:dur_ns",
-        max AS "Max:dur_ns",
-        round(stddev, 1) AS "StdDev:dur_ns",
-        name AS "Name"
+        num AS "Instances"
     FROM
         summary
     ORDER BY 2 DESC
 """
 
-QUERY_COMMUNICATION = """ 
+QUERY_COMMUNICATION_STATS = """ 
 WITH
     domains AS (
         SELECT
@@ -141,11 +134,26 @@ WITH
             OR
             ne.eventType == 71
     )
-
-    SELECT
-        duration AS "Duration:dur_ns",
-        tag AS "Name"
-    FROM
-        nvtx
-    ORDER BY duration DESC
+SELECT
+    tag AS "Name",
+    duration AS "Duration:dur_ns"
+FROM
+    nvtx
+WHERE
+    name = ?
 """
+
+def generate_communicaiton_stats(comm):
+    durations = [dur[1] for dur in comm[1]]
+    label = comm[0]
+    dict = generate_statistics(durations, label)
+    return label, dict[label]
+
+def parallel_parse_communication_data(queries_res):
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = []
+        for data in queries_res:
+            future = executor.submit(generate_communicaiton_stats, data)
+            futures.append(future)
+        results = [future.result() for future in futures]
+    return results

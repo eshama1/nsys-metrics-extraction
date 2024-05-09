@@ -37,7 +37,9 @@ WITH
     kernel_summary AS (
         SELECT
             KERNEL.shortname AS kernel_id,
-            KERNEL.end - KERNEL.start AS execution_time
+            KERNEL.end - KERNEL.start AS execution_time,
+            KERNEL.start as kernel_start,
+            KERNEL.correlationId as correlation_id
         FROM
             CUPTI_ACTIVITY_KIND_KERNEL AS KERNEL
         JOIN
@@ -51,7 +53,7 @@ WITH
         SELECT
             correlationId,
             end - start AS launch_overhead,
-            start AS runtime_start
+            end AS runtime_end
         FROM
             CUPTI_ACTIVITY_KIND_RUNTIME
     )
@@ -59,13 +61,13 @@ SELECT
     KS.kernel_id AS "ID",
     KS.execution_time AS "Execution time",
     RS.launch_overhead AS "Launch overhead",
-    KS.execution_time - RS.runtime_start AS "Slack"
+    KS.kernel_start - RS.runtime_end AS "Slack"
 FROM
     kernel_summary AS KS
 LEFT JOIN
     runtime_summary AS RS
 ON
-    RS.correlationId = KS.kernel_id
+    RS.correlationId = KS.correlation_id
 """
 
 KERNEL_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_KERNEL', 'CUPTI_ACTIVITY_KIND_RUNTIME', 'StringIds']

@@ -79,7 +79,7 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
         logging.error('Unknown metric type')
 
     if metric_type is KERNEL_STATS:
-        logging.info(f"Getting RAW Data for each specific {name_stats} (RAW kernel extraction will take a while)")
+        logging.info(f"Getting RAW Data for each specific {name_stats} (RAW kernel extraction will take a while for large sqlite files, ~1h)")
     else:
         logging.info(f"Getting RAW Data for each specific {name_stats}")
 

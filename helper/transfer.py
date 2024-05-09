@@ -1,21 +1,34 @@
+from absl import logging
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from helper.general import generate_statistics, MAX_WORKERS
 
 QUERY_TRANSFERS = """
 WITH
-    MemcpyOperStrs AS (SELECT * FROM ENUM_CUDA_MEMCPY_OPER),
     memops AS (
         SELECT
-            mos.label AS name,
+            CASE
+                WHEN mcpy.copyKind = 0 THEN 'Unknown'
+                WHEN mcpy.copyKind = 1 THEN 'Host-to-Device'
+                WHEN mcpy.copyKind = 2 THEN 'Device-to-Host'
+                WHEN mcpy.copyKind = 3 THEN 'Host-to-Array'
+                WHEN mcpy.copyKind = 4 THEN 'Array-to-Host'
+                WHEN mcpy.copyKind = 5 THEN 'Array-to-Array'
+                WHEN mcpy.copyKind = 6 THEN 'Array-to-Device'
+                WHEN mcpy.copyKind = 7 THEN 'Device-to-Array'
+                WHEN mcpy.copyKind = 8 THEN 'Device-to-Device'
+                WHEN mcpy.copyKind = 9 THEN 'Host-to-Host'
+                WHEN mcpy.copyKind = 10 THEN 'Peer-to-Peer'
+                WHEN mcpy.copyKind = 11 THEN 'Unified Host-to-Device'
+                WHEN mcpy.copyKind = 12 THEN 'Unified Device-to-Host'
+                WHEN mcpy.copyKind = 13 THEN 'Unified Device-to-Device'
+                ELSE 'Unknown'
+            END AS name,
             mcpy.end - mcpy.start AS duration,
             mcpy.bytes AS size
         FROM
             CUPTI_ACTIVITY_KIND_MEMCPY as mcpy
-        INNER JOIN
-            MemcpyOperStrs AS mos
-            ON mos.id == mcpy.copyKind
-
         UNION ALL
         SELECT
             'Memset' AS name,
@@ -50,17 +63,29 @@ ORDER BY 2 DESC
 
 QUERY_TRANSFERS_STATS = """
 WITH
-    MemcpyOperStrs AS (SELECT * FROM ENUM_CUDA_MEMCPY_OPER),
     transfers AS (
         SELECT
-            mos.label AS name,
+            CASE
+                WHEN mcpy.copyKind = 0 THEN 'Unknown'
+                WHEN mcpy.copyKind = 1 THEN 'Host-to-Device'
+                WHEN mcpy.copyKind = 2 THEN 'Device-to-Host'
+                WHEN mcpy.copyKind = 3 THEN 'Host-to-Array'
+                WHEN mcpy.copyKind = 4 THEN 'Array-to-Host'
+                WHEN mcpy.copyKind = 5 THEN 'Array-to-Array'
+                WHEN mcpy.copyKind = 6 THEN 'Array-to-Device'
+                WHEN mcpy.copyKind = 7 THEN 'Device-to-Array'
+                WHEN mcpy.copyKind = 8 THEN 'Device-to-Device'
+                WHEN mcpy.copyKind = 9 THEN 'Host-to-Host'
+                WHEN mcpy.copyKind = 10 THEN 'Peer-to-Peer'
+                WHEN mcpy.copyKind = 11 THEN 'Unified Host-to-Device'
+                WHEN mcpy.copyKind = 12 THEN 'Unified Device-to-Host'
+                WHEN mcpy.copyKind = 13 THEN 'Unified Device-to-Device'
+                ELSE 'Unknown'
+            END AS name,
             mcpy.end - mcpy.start AS duration,
             mcpy.bytes AS size
         FROM
             CUPTI_ACTIVITY_KIND_MEMCPY as mcpy
-        INNER JOIN
-            MemcpyOperStrs AS mos
-            ON mos.id == mcpy.copyKind
         UNION ALL
         SELECT
             'Memset' AS name,
@@ -78,6 +103,9 @@ FROM
 WHERE
     name = ?
 """
+
+TRANSFER_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_MEMCPY', 'CUPTI_ACTIVITY_KIND_MEMSET']
+
 
 def generate_transfer_stats(transfers):
     frequency_distro = np.zeros(10)
@@ -138,10 +166,20 @@ def generate_transfer_stats(transfers):
 
 
 def parallel_parse_transfer_data(queries_res):
+    total_tasks = len(queries_res)
+    completed_tasks = 0
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for data in queries_res:
             future = executor.submit(generate_transfer_stats, data)
             futures.append(future)
-        results = [future.result() for future in futures]
+
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+            completed_tasks += 1
+            if int((completed_tasks / total_tasks) * 100) % 10 == 0:
+                logging.info(f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%")
+
     return results

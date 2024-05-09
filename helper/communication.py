@@ -1,7 +1,7 @@
-import numpy as np
-from concurrent.futures import ThreadPoolExecutor
-from helper.general import generate_statistics, MAX_WORKERS
+from absl import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from helper.general import generate_statistics, MAX_WORKERS
 
 QUERY_COMMUNICATION = """
 WITH
@@ -143,6 +143,8 @@ WHERE
     name = ?
 """
 
+COMM_REQUIRED_TABLES = ['NVTX_EVENTS', 'StringIds']
+
 def generate_communicaiton_stats(comm):
     durations = [dur[1] for dur in comm[1]]
     label = comm[0]
@@ -150,10 +152,22 @@ def generate_communicaiton_stats(comm):
     return label, dict[label]
 
 def parallel_parse_communication_data(queries_res):
+    total_tasks = len(queries_res)
+    completed_tasks = 0
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for data in queries_res:
             future = executor.submit(generate_communicaiton_stats, data)
             futures.append(future)
-        results = [future.result() for future in futures]
+
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+            completed_tasks += 1
+
+            # Log progress every 10%
+            if int((completed_tasks / total_tasks) * 100 % 10) == 0:
+                logging.info(f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%")
+
     return results

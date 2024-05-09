@@ -1,5 +1,6 @@
-import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+from absl import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from helper.general import remove_outliers, generate_statistics, MAX_WORKERS
 
 QUERY_KERNEL = """ 
@@ -67,6 +68,7 @@ WHERE
     kernel_id = ?
 """
 
+KERNEL_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_KERNEL', 'CUPTI_ACTIVITY_KIND_RUNTIME', 'StringIds']
 
 def generate_kernel_queries(kernel_ids):
     queries = []
@@ -116,32 +118,37 @@ def parse_kernel_data(data):
 
 
 def parallel_parse_kernel_data(queries_res):
+    total_tasks = len(queries_res)
+    completed_tasks = 0
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for data in queries_res:
             future = executor.submit(parse_kernel_data, data)
             futures.append(future)
-        results = [future.result() for future in futures]
+
+        results = []
+        for future in as_completed(futures):
+            results.append(future.result())
+            completed_tasks += 1
+
+            if int((completed_tasks / total_tasks) * 100) % 10 == 0:
+                logging.info(f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%")
+
     return results
 
 
-
 def create_general_duration_kernel_stats(kernel_stats):
-
-
     return None
+
 
 def create_general_overhead_kernel_stats(kernel_stats):
-
-
     return None
+
 
 def create_general_slack_kernel_stats(kernel_stats):
-
-
     return None
 
+
 def create_general_kernel_stats(kernel_stats):
-
-
     return None

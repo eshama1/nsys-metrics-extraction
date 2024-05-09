@@ -1,8 +1,33 @@
-import numpy as np
 import sqlite3
+from absl import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import numpy as np
+
 MAX_WORKERS = 12
+
+
+def table_exists(database_file, table_name):
+    try:
+        with sqlite3.connect(database_file) as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
+            result = cursor.fetchone()
+            if result:
+                return True
+            else:
+                logging.error(f"Statistics were requested but required table {table_name} does not exist")
+                return False
+    except sqlite3.Error as e:
+        logging.error(f"Statistics were requested but required table {table_name} does not exist")
+        return False
+
+
+def mutiple_table_exists(database_file, table_name_list):
+    for table_name in table_name_list:
+        if not table_exists(database_file, table_name):
+            return False
+    return True
 
 def execute_query(conn, query, params=None):
     cursor = conn.cursor()
@@ -31,6 +56,8 @@ def execute_query_in_thread(query_params, database_file):
 
 def execute_queries_parallel(queries_with_params, database_file):
     results = []
+    total_queries = len(queries_with_params)
+    completed_queries = 0
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = []
         for query_params in queries_with_params:
@@ -38,6 +65,10 @@ def execute_queries_parallel(queries_with_params, database_file):
             futures.append(future)
         for future in as_completed(futures):
             results.append(future.result())
+            completed_queries += 1
+            # Check if 10% of total items are completed
+            if int((completed_queries / total_queries) * 100) % 10 == 0:
+                logging.info(f"Progress: {(completed_queries / total_queries) * 100:.1f}%")
     return results
 
 
@@ -89,5 +120,3 @@ def generate_statistics(data, label):
     }
 
     return kernel_data
-
-

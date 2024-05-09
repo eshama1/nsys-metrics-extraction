@@ -37,35 +37,35 @@ WITH
     kernel_summary AS (
         SELECT
             KERNEL.shortname AS kernel_id,
-            KERNEL.end - KERNEL.start AS execution_time,
-            CASE
-                WHEN RUNTIME.correlationId IS NOT NULL THEN RUNTIME.end - RUNTIME.start
-                ELSE NULL 
-            END AS launch_overhead,
-            CASE
-                WHEN RUNTIME.correlationId IS NOT NULL THEN KERNEL.start - RUNTIME.end
-                ELSE NULL
-            END AS slack
+            KERNEL.end - KERNEL.start AS execution_time
         FROM
             CUPTI_ACTIVITY_KIND_KERNEL AS KERNEL
-        LEFT JOIN
-            CUPTI_ACTIVITY_KIND_RUNTIME AS RUNTIME
-        ON
-            RUNTIME.correlationId = KERNEL.correlationId
         JOIN
             StringIds AS StringIds
         ON
             KERNEL.shortName = StringIds.id
+        WHERE
+            KERNEL.shortname = ?
+    ),
+    runtime_summary AS (
+        SELECT
+            correlationId,
+            end - start AS launch_overhead,
+            start AS runtime_start
+        FROM
+            CUPTI_ACTIVITY_KIND_RUNTIME
     )
 SELECT
-    kernel_id AS "ID",
-    execution_time AS "Execution time",
-    launch_overhead AS "Launch overhead",
-    slack AS "Slack"
+    KS.kernel_id AS "ID",
+    KS.execution_time AS "Execution time",
+    RS.launch_overhead AS "Launch overhead",
+    KS.execution_time - RS.runtime_start AS "Slack"
 FROM
-    kernel_summary
-WHERE
-    kernel_id = ?
+    kernel_summary AS KS
+LEFT JOIN
+    runtime_summary AS RS
+ON
+    RS.correlationId = KS.kernel_id
 """
 
 KERNEL_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_KERNEL', 'CUPTI_ACTIVITY_KIND_RUNTIME', 'StringIds']
@@ -103,11 +103,14 @@ def parse_kernel_data(data):
     results_dict = {}
     results_dict.update(generate_statistics(raw_duration_data, 'Execution Duration'))
 
-    if runtime_values:
+    if runtime_values and raw_overhead_data:
         results_dict.update(generate_statistics(raw_overhead_data, 'Launch Overhead'))
-        results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
     else:
         results_dict['Launch Overhead'] = None
+
+    if runtime_values and raw_slack_data:
+        results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
+    else:
         results_dict['Slack'] = None
 
     if raw_duration_data:

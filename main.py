@@ -78,7 +78,11 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
     else:
         logging.error('Unknown metric type')
 
-    logging.info(f"Getting RAW Data for each specific {name_stats}")
+    if metric_type is KERNEL_STATS:
+        logging.info(f"Getting RAW Data for each specific {name_stats} (RAW kernel extraction will take a while)")
+    else:
+        logging.info(f"Getting RAW Data for each specific {name_stats}")
+
     queries = generate_queries(raw_data_query, ids)
     queries_res = execute_queries_parallel(queries, database_file)
 
@@ -105,7 +109,7 @@ def create_statistics_from_file():
 
     logging.info("Starting extraction and creation of statistics from file")
 
-    if FLAGS.no_kernel_metrics:
+    if not FLAGS.no_kernel_metrics:
         logging.info("Starting Kernel Statistics")
         if mutiple_table_exists(database_file, KERNEL_REQUIRED_TABLES):
             kernel_statistics = create_statistics(database_file, QUERY_KERNEL, QUERY_KERNEL_STATS, metric_type=KERNEL_STATS)
@@ -125,7 +129,7 @@ def create_statistics_from_file():
                                                 metric_type=COMMUNICATION_STATS)
             full_statistics['Communication Statistics'] = comm_statistics
 
-    if FLAGS.no_save_data and full_statistics:
+    if not FLAGS.no_save_data and full_statistics:
         database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'
         logging.info(f"Saving Extracted Statistics of {database_file} to {database_file_JSON}")
         with open(database_file_JSON, 'w') as json_file:

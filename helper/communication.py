@@ -88,51 +88,44 @@ WITH
 
 QUERY_COMMUNICATION_STATS = """ 
 WITH
-    domains AS (
-        SELECT
-            min(start),
-            domainId AS id,
-            globalTid AS globalTid,
-            text AS name
-        FROM
-            NVTX_EVENTS
-        WHERE
-            eventType == 75
-        GROUP BY 2, 3
-    ),
-    maxts AS(
-        SELECT max(max(start), max(end)) AS m
-        FROM   NVTX_EVENTS
+    max_times AS (
+        SELECT MAX(start) AS max_start, MAX(end) AS max_end
+        FROM NVTX_EVENTS
     ),
     nvtx AS (
         SELECT
-            coalesce(ne.end, (SELECT m FROM maxts)) - ne.start AS duration,
+            COALESCE(ne.end, (SELECT max_end FROM max_times)) - ne.start AS duration,
             CASE
-                WHEN d.name NOT NULL AND sid.value IS NOT NULL
-                    THEN d.name || ':' || sid.value
-                WHEN d.name NOT NULL AND sid.value IS NULL
-                    THEN d.name || ':' || ne.text
-                WHEN d.name IS NULL AND sid.value NOT NULL
-                    THEN sid.value
+                WHEN d.name IS NOT NULL AND sid.value IS NOT NULL THEN d.name || ':' || sid.value
+                WHEN d.name IS NOT NULL AND sid.value IS NULL THEN d.name || ':' || ne.text
+                WHEN d.name IS NULL AND sid.value IS NOT NULL THEN sid.value
                 ELSE ne.text
             END AS tag
         FROM
             NVTX_EVENTS AS ne
         LEFT OUTER JOIN
-            domains AS d
-            ON ne.domainId == d.id
-                AND (ne.globalTid & 0x0000FFFFFF000000) == (d.globalTid & 0x0000FFFFFF000000)
+            (
+                SELECT
+                    MIN(start) AS min_start,
+                    domainId AS id,
+                    globalTid AS globalTid,
+                    text AS name
+                FROM
+                    NVTX_EVENTS
+                WHERE
+                    eventType = 75
+                GROUP BY
+                    domainId, globalTid, text
+            ) AS d
+        ON
+            ne.domainId = d.id
+            AND (ne.globalTid & 0x0000FFFFFF000000) = (d.globalTid & 0x0000FFFFFF000000)
         LEFT OUTER JOIN
             StringIds AS sid
-            ON ne.textId == sid.id
+        ON
+            ne.textId = sid.id
         WHERE
-            ne.eventType == 59
-            OR
-            ne.eventType == 60
-            OR
-            ne.eventType == 70
-            OR
-            ne.eventType == 71
+            ne.eventType IN (59, 60, 70, 71)
     )
 SELECT
     tag AS "Name",

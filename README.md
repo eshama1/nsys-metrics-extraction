@@ -1,1 +1,3 @@
-Python script designed to extract statistics from an NSYS CUDA Trace
+NSYS Analyzer & Visualizer (NAV)
+
+Python script designed to extract and graph statistics from an NSYS Trace database 

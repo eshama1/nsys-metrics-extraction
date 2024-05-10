@@ -1,25 +1,17 @@
 import json
-import time
 import multiprocessing
+import time
 from collections import OrderedDict
 
-import matplotlib
-from absl import app, flags, logging
+from absl import app, flags
 
-from helper.communication import QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS, parallel_parse_communication_data, COMM_REQUIRED_TABLES
-from helper.kernel import parallel_parse_kernel_data, QUERY_KERNEL, QUERY_KERNEL_STATS, KERNEL_REQUIRED_TABLES
-from helper.transfer import parallel_parse_transfer_data, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, TRANSFER_REQUIRED_TABLES
-
-matplotlib.use("pgf")
-matplotlib.rcParams.update({
-    "pgf.texsystem": "pdflatex",
-    'font.family': 'serif',
-    'font.size': 14,
-    'text.usetex': True,
-    'pgf.rcfonts': False,
-})
-
+from helper.communication import QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS, \
+    COMM_REQUIRED_TABLES, create_specific_communication_stats, parallel_parse_communication_data
 from helper.general import *
+from helper.kernel import parallel_parse_kernel_data, QUERY_KERNEL, QUERY_KERNEL_STATS, KERNEL_REQUIRED_TABLES, \
+    parallel_create_general_kernel_stats
+from helper.transfer import parallel_parse_transfer_data, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, \
+    TRANSFER_REQUIRED_TABLES, create_specific_transfer_stats
 
 flags.DEFINE_string('json_file', None, "JSON file with extracted statistics", short_name='jf')
 flags.DEFINE_string('data_file', None, "Data Base file for extraction (sqlite)", short_name='df')
@@ -79,7 +71,8 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
         logging.error('Unknown metric type')
 
     if metric_type is KERNEL_STATS:
-        logging.info(f"Getting RAW Data for each specific {name_stats} (RAW kernel extraction will take a while for large sqlite files, ~1h)")
+        logging.info(
+            f"Getting RAW Data for each specific {name_stats} (RAW kernel extraction will take a while for large sqlite files, ~1h)")
     else:
         logging.info(f"Getting RAW Data for each specific {name_stats}")
 
@@ -112,22 +105,26 @@ def create_statistics_from_file():
     if not FLAGS.no_kernel_metrics:
         logging.info("Starting Kernel Statistics")
         if mutiple_table_exists(database_file, KERNEL_REQUIRED_TABLES):
-            kernel_statistics = create_statistics(database_file, QUERY_KERNEL, QUERY_KERNEL_STATS, metric_type=KERNEL_STATS)
+            kernel_statistics = create_statistics(database_file, QUERY_KERNEL, QUERY_KERNEL_STATS,
+                                                  metric_type=KERNEL_STATS)
             full_statistics['Kernel Statistics'] = {'Individual Kernels': kernel_statistics}
+            full_statistics['Kernel Statistics'].update(parallel_create_general_kernel_stats(kernel_statistics))
 
     if not FLAGS.no_transfer_metrics:
         logging.info("Starting Transfer Statistics")
         if mutiple_table_exists(database_file, TRANSFER_REQUIRED_TABLES):
             transfer_statistics = create_statistics(database_file, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS,
                                                     metric_type=TRANSFER_STATS)
-            full_statistics['Transfer Statistics'] = transfer_statistics
+            full_statistics['Transfer Statistics'] = {'Individual Transfers': transfer_statistics}
+            full_statistics['Transfer Statistics'].update(create_specific_transfer_stats(transfer_statistics))
 
     if not FLAGS.no_communication_metrics:
         logging.info("Starting Communication Statistics")
         if mutiple_table_exists(database_file, COMM_REQUIRED_TABLES):
             comm_statistics = create_statistics(database_file, QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS,
                                                 metric_type=COMMUNICATION_STATS)
-            full_statistics['Communication Statistics'] = comm_statistics
+            full_statistics['Communication Statistics'] = {'Individual Communications': comm_statistics}
+            full_statistics['Communication Statistics'].update(create_specific_communication_stats(kernel_statistics))
 
     if not FLAGS.no_save_data and full_statistics:
         database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'

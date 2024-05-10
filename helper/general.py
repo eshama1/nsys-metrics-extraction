@@ -1,8 +1,9 @@
 import sqlite3
-from absl import logging
+from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
+from absl import logging
 
 MAX_WORKERS = 12
 
@@ -28,6 +29,7 @@ def mutiple_table_exists(database_file, table_name_list):
         if not table_exists(database_file, table_name):
             return False
     return True
+
 
 def execute_query(conn, query, params=None):
     cursor = conn.cursor()
@@ -85,12 +87,12 @@ def remove_outliers(data):
     upper_bound = Q3 + 1.5 * IQR
 
     # Remove outliers
-    clean_data = [x for x in data if (x >= lower_bound) and (x <= upper_bound)]
+    clean_data = [x for x in data if np.all((x >= lower_bound) & (x <= upper_bound))]
 
     return clean_data
 
 
-def generate_statistics(data, label):
+def generate_statistics(data, label, disable_raw=False):
     kernel_data = {}
     data = [float(x) for x in data]
 
@@ -110,13 +112,132 @@ def generate_statistics(data, label):
     rounded_std_deviation = round(std_deviation, 6)
 
     # Prepare kernel data dictionary
-    kernel_data[label] = {
-        'Raw Data': rounded_log_data,
-        'Mean Duration': rounded_mean_duration,
-        'Median Duration': rounded_median_duration,
-        'Minimum Duration': rounded_min_duration,
-        'Maximum Duration': rounded_max_duration,
-        'Standard Deviation': rounded_std_deviation
-    }
+    if disable_raw:
+        kernel_data[label] = {
+            'Mean': rounded_mean_duration,
+            'Median': rounded_median_duration,
+            'Minimum': rounded_min_duration,
+            'Maximum': rounded_max_duration,
+            'Standard Deviation': rounded_std_deviation
+        }
+    else:
+        kernel_data[label] = {
+            'Raw Data': rounded_log_data,
+            'Mean': rounded_mean_duration,
+            'Median': rounded_median_duration,
+            'Minimum': rounded_min_duration,
+            'Maximum': rounded_max_duration,
+            'Standard Deviation': rounded_std_deviation
+        }
 
     return kernel_data
+
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(np.floor(np.log10(size_bytes) / 3))
+    p = np.power(10, i * 3)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_name[i]}"
+
+
+def expand_bins(data, bin_edges):
+    expanded_bin_edges = []
+
+    for i in range(len(bin_edges) - 1):
+        left_index = bisect_left(data, bin_edges[i])
+        right_index = bisect_right(data, bin_edges[i + 1])
+        data_subset = data[left_index:right_index]
+
+        if len(data_subset) != 0:
+            idx = int((right_index + left_index) / 2 - 1)
+            base = data[idx]
+            idx += 1
+            while (base == data[idx]):
+                idx += 1
+
+            if idx is not right_index:
+                if i == (len(bin_edges) - 2):
+                    expanded_bin_edges.extend([bin_edges[i], float(data[idx]), float(data[-1])])
+                else:
+                    expanded_bin_edges.extend([bin_edges[i], float(data[idx]), bin_edges[i + 1]])
+            else:
+                expanded_bin_edges.extend([bin_edges[i], bin_edges[i + 1]])
+        else:
+            mid_point = (bin_edges[i] + bin_edges[i + 1]) / 2
+            expanded_bin_edges.extend([bin_edges[i], mid_point, bin_edges[i + 1]])
+
+    bin_edges = np.array(np.unique(expanded_bin_edges))
+
+    return bin_edges
+
+
+def create_histogram(data, bins=10, powers=False, base=False, convert_bytes=False, return_bins=False):
+    if len(data) > 1:
+        data.sort()
+        if base:
+            bin_edges = np.histogram_bin_edges(data, bins=bins)
+            if powers:
+                bin_edges = 2 ** np.round(np.log2(bin_edges))
+                bin_edges = np.unique(bin_edges)
+        else:
+            quantiles = np.linspace(0, 1, bins + 1)
+            bin_edges = np.quantile(data, quantiles)
+            if powers:
+                bin_edges = 2 ** np.round(np.log2(bin_edges))
+                bin_edges = np.unique(bin_edges)
+                if 1 < len(bin_edges) < bins / 2 < len(set(data)):
+                    bin_edges = expand_bins(data, bin_edges)
+            else:
+                bin_edges = np.unique(bin_edges)
+
+        if len(bin_edges) > 1:
+            hist, _ = np.histogram(data, bins=bin_edges)
+            bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
+
+            if convert_bytes:
+                bin_labels = [f'{convert_size(left)} to {convert_size(right)}' for left, right in
+                              zip(bin_edges[:-1], bin_edges[1:])]
+            else:
+                bin_labels = [f'{left} to {right}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
+
+            if not isinstance(bin_centers, list):
+                bin_centers = bin_centers.tolist()
+            hist = hist.tolist()
+            bin_width = np.diff(bin_edges).tolist()
+        else:
+            bin_centers = [data[0]]
+            hist = [len(data)]
+            bin_width = [0]
+            if convert_bytes:
+                bin_labels = [f'{convert_size(data[0])}']
+            else:
+                bin_labels = [f'{data[0]}']
+
+        histogram_data = {
+            "Bin Centers": bin_centers,
+            "Histogram": hist,
+            "Bin Width": bin_width,
+            "Bin Labels": bin_labels
+        }
+
+        if return_bins:
+
+            return_histogram_data = {
+                "Bin Centers": bin_centers,
+                "Histogram": None,
+                "Bin Width": bin_width,
+                "Bin Labels": bin_labels
+            }
+
+            bins = [(start, end) for start, end in zip(bin_edges[:-1], bin_edges[1:])]
+            return histogram_data, (bins, return_histogram_data)
+        else:
+            return histogram_data
+    else:
+        if return_bins:
+            return None, None
+        else:
+            return None

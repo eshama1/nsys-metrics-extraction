@@ -1,7 +1,8 @@
-from absl import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from helper.general import remove_outliers, generate_statistics, MAX_WORKERS
+from absl import logging
+
+from helper.general import remove_outliers, generate_statistics, MAX_WORKERS, create_histogram
 
 QUERY_KERNEL = """ 
 WITH
@@ -72,6 +73,7 @@ ON
 
 KERNEL_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_KERNEL', 'CUPTI_ACTIVITY_KIND_RUNTIME', 'StringIds']
 
+
 def generate_kernel_queries(kernel_ids):
     queries = []
 
@@ -103,21 +105,30 @@ def parse_kernel_data(data):
             remove_outliers(raw_slack_data)
 
     results_dict = {}
-    results_dict.update(generate_statistics(raw_duration_data, 'Execution Duration'))
+
+    if raw_duration_data:
+        results_dict.update(generate_statistics(raw_duration_data, 'Execution Duration'))
+        histogram_data = create_histogram(raw_duration_data, bins=10, powers=False, base=False,
+                                          convert_bytes=False, return_bins=False)
+        results_dict['Execution Duration']['Distribution'] = histogram_data
+    else:
+        results_dict['Execution Duration'] = None
 
     if runtime_values and raw_overhead_data:
         results_dict.update(generate_statistics(raw_overhead_data, 'Launch Overhead'))
+        histogram_data = create_histogram(raw_duration_data, bins=10, powers=False, base=False,
+                                          convert_bytes=False, return_bins=False)
+        results_dict['Launch Overhead']['Distribution'] = histogram_data
     else:
         results_dict['Launch Overhead'] = None
 
     if runtime_values and raw_slack_data:
         results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
+        histogram_data = create_histogram(raw_duration_data, bins=10, powers=False, base=False,
+                                          convert_bytes=False, return_bins=False)
+        results_dict['Slack']['Distribution'] = histogram_data
     else:
         results_dict['Slack'] = None
-
-    if raw_duration_data:
-        freq = len(raw_duration_data)
-        results_dict['Frequency'] = freq
 
     return id, results_dict
 
@@ -143,17 +154,39 @@ def parallel_parse_kernel_data(queries_res):
     return results
 
 
-def create_general_duration_kernel_stats(kernel_stats):
-    return None
+def create_specific_kernel_stats(kernel_stats, label, handle_outliers=False):
+    dict = {}
+    cluster_data = []
+    combined_raw_data = []
+
+    for kernel_id, kernel_info in kernel_stats.items():
+        if kernel_info[label]:
+            if kernel_info[label]["Raw Data"]:
+                combined_raw_data.extend(kernel_info[label]["Raw Data"])
+            if kernel_info[label]['Mean'] and kernel_info[label]['Median'] and kernel_info[
+                "Instance"]:
+                cluster_data.append([kernel_info[label]['Mean'], kernel_info[label]['Median'],
+                                     kernel_info["Instance"]])
+
+    if handle_outliers and cluster_data: cluster_data = remove_outliers(cluster_data)
+    if combined_raw_data:
+        dict.update(generate_statistics(combined_raw_data, label, disable_raw=True))
+        dict[label]['Histogram'] = create_histogram(combined_raw_data)
+    if cluster_data:
+        dict[label]['k-mean'] = {'Raw Data': cluster_data}
+
+    return dict
 
 
-def create_general_overhead_kernel_stats(kernel_stats):
-    return None
+def parallel_create_general_kernel_stats(kernel_stats):
+    general_stats = {}
+    tasks = ['Execution Duration', 'Launch Overhead', 'Slack']
 
+    with ThreadPoolExecutor(max_workers=len(tasks) if MAX_WORKERS > len(tasks) else MAX_WORKERS) as executor:
+        futures = {executor.submit(create_specific_kernel_stats, kernel_stats, task): task for task in tasks}
 
-def create_general_slack_kernel_stats(kernel_stats):
-    return None
+        for future in as_completed(futures):
+            result = future.result()
+            general_stats.update(result)
 
-
-def create_general_kernel_stats(kernel_stats):
-    return None
+    return general_stats

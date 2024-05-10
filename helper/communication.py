@@ -1,7 +1,8 @@
-from absl import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from helper.general import generate_statistics, MAX_WORKERS
+from absl import logging
+
+from helper.general import generate_statistics, MAX_WORKERS, create_histogram, remove_outliers
 
 QUERY_COMMUNICATION = """
 WITH
@@ -138,11 +139,22 @@ WHERE
 
 COMM_REQUIRED_TABLES = ['NVTX_EVENTS', 'StringIds']
 
+
 def generate_communicaiton_stats(comm):
     durations = [dur[1] for dur in comm[1]]
     label = comm[0]
-    dict = generate_statistics(durations, label)
+    dict = {}
+
+    if durations and label:
+        dict[label] = generate_statistics(durations, 'Execution Duration')
+        histogram_data = create_histogram(durations, bins=10, powers=False, base=False,
+                                          convert_bytes=False, return_bins=False)
+        dict[label]['Execution Duration']['Distribution'] = histogram_data
+    else:
+        dict[label] = None
+
     return label, dict[label]
+
 
 def parallel_parse_communication_data(queries_res):
     total_tasks = len(queries_res)
@@ -164,3 +176,29 @@ def parallel_parse_communication_data(queries_res):
                 logging.info(f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%")
 
     return results
+
+
+def create_specific_communication_stats(comm_stats, handle_outliers=False):
+    dict = {}
+    cluster_data = []
+    combined_raw_data = []
+
+    for kernel_id, kernel_info in comm_stats.items():
+        if kernel_info["Execution Duration"]:
+            if kernel_info["Execution Duration"]["Raw Data"]:
+                combined_raw_data.extend(kernel_info["Execution Duration"]["Raw Data"])
+            if kernel_info["Execution Duration"]['Mean'] and kernel_info["Execution Duration"]['Median'] and \
+                    kernel_info[
+                        "Instance"]:
+                cluster_data.append(
+                    [kernel_info["Execution Duration"]['Mean'], kernel_info["Execution Duration"]['Median'],
+                     kernel_info["Instance"]])
+
+    if handle_outliers and cluster_data: cluster_data = remove_outliers(cluster_data)
+    if combined_raw_data:
+        dict.update(generate_statistics(combined_raw_data, "Execution Duration", disable_raw=True))
+        dict["Execution Duration"]['Histogram'] = create_histogram(combined_raw_data)
+    if cluster_data:
+        dict["Execution Duration"]['k-mean'] = {'Raw Data': cluster_data}
+
+    return dict

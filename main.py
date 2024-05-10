@@ -1,9 +1,9 @@
-import json
 import multiprocessing
+import os
 import time
 from collections import OrderedDict
 
-from absl import app, flags
+from absl import flags
 
 from helper.communication import QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS, \
     COMM_REQUIRED_TABLES, create_specific_communication_stats, parallel_parse_communication_data
@@ -13,8 +13,12 @@ from helper.kernel import parallel_parse_kernel_data, QUERY_KERNEL, QUERY_KERNEL
 from helper.transfer import parallel_parse_transfer_data, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, \
     TRANSFER_REQUIRED_TABLES, create_specific_transfer_stats
 
-flags.DEFINE_string('json_file', None, "JSON file with extracted statistics", short_name='jf')
+# General Flags
+flags.DEFINE_string('multi_data_label', None, "(REQUIRED for multi-files) Labels for each database/json file provided to distinguish in statistics ex:(1 GPU, 2 GPU, 3 GPU), commas used to split names and order must be same as provided files", short_name='mdl')
+
+# Extraction Flags
 flags.DEFINE_string('data_file', None, "Data Base file for extraction (sqlite)", short_name='df')
+flags.DEFINE_string('json_file', None, "JSON file with extracted statistics", short_name='jf')
 flags.DEFINE_boolean('no_kernel_metrics', False, "export kernel metrics", short_name='nkm')
 flags.DEFINE_boolean('no_transfer_metrics', False, "export transfer metrics", short_name='ntm')
 flags.DEFINE_boolean('no_communication_metrics', False, "export communication metrics", short_name='ncm')
@@ -96,9 +100,8 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
     return statistics
 
 
-def create_statistics_from_file():
+def create_statistics_from_file(database_file, output_dir):
     full_statistics = {}
-    database_file = FLAGS.data_file
 
     logging.info("Starting extraction and creation of statistics from file")
 
@@ -127,7 +130,7 @@ def create_statistics_from_file():
             full_statistics['Communication Statistics'].update(create_specific_communication_stats(kernel_statistics))
 
     if not FLAGS.no_save_data and full_statistics:
-        database_file_JSON = database_file.split('.')[0] + '_parsed_stats.json'
+        database_file_JSON = output_dir + database_file.split('.')[0] + '_parsed_stats.json'
         logging.info(f"Saving Extracted Statistics of {database_file} to {database_file_JSON}")
         with open(database_file_JSON, 'w') as json_file:
             json.dump(full_statistics, json_file, indent=4)
@@ -136,16 +139,36 @@ def create_statistics_from_file():
 
 
 def run(args):
-    app_statistics = create_statistics_from_file()
+    files, num_files, file_labels, output_data, extract_data = file_args_checking(args)
+    output_dir = None
 
-    # with open('parsed_kernel_stats.json', 'r') as json_file:
-    #     # Load the JSON data into a dictionary
-    #     temp = json.load(json_file, parse_float=float)
+    if num_files > 1:
+        temp = []
+        for label in file_labels:
+            dir = f"./output/{label}/"
+            os.makedirs(dir, exist_ok=True)
+            temp.append(dir)
+        output_dir = temp
+    else:
+        output_dir = "./output/"
+        os.makedirs(dir, exist_ok=True)
 
-    # with open('single_node_single_gpu_parsed_kernel_stats.json', 'r') as json_file:
-    #     kernel_statistics = OrderedDict(json.load(json_file, parse_float=float))
-    # with open('single_node_single_gpu_parsed_transfer_stats.json', 'r') as json_file:
-    #     transfer_statistics = json.load(json_file, parse_float=float)
+    extracted_data = {}
+
+    if extract_data:
+        if num_files > 1:
+            for i, file in enumerate(files):
+                extracted_data[file_labels[i]] = create_statistics_from_file(file, output_dir[i])
+        else:
+            extracted_data.update(create_statistics_from_file(files,output_dir))
+    else:
+        if num_files > 1:
+            for i, file in enumerate(files):
+                extracted_data[file_labels[i]] = import_from_json(file)
+        else:
+            extracted_data.update(import_from_json(files))
+
+
 
 
 def main(argv):

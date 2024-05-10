@@ -1,11 +1,51 @@
+import json
 import sqlite3
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
-from absl import logging
+from absl import logging, app
 
 MAX_WORKERS = 12
+
+def file_args_checking(args):
+    extract_data = False
+    output_data = False
+    file_labels = None
+
+    if args.data_file and not args.json_file:
+        extract_data = True
+
+    if extract_data:
+        num_files = args.data_file.count(".sqlite")
+    else:
+        num_files = args.json_file.count(".json")
+
+    if num_files > 1:
+        files = args.data_file.split(" ") if extract_data else args.json_file.split(" ")
+
+        if not args.multi_data_label:
+            raise app.UsageError("Must provide labels for multiple files extraction")
+
+        file_labels = args.multi_data_label.split(',')
+
+        if len(file_labels) != num_files:
+            raise app.UsageError("Must provide labels for each provided files")
+    else:
+        files = args.data_file if extract_data else args.json_file
+
+    if args.no_metrics_output:
+        output_data = args.no_metrics_output
+
+    return files, num_files, file_labels,output_data, extract_data
+
+
+def import_from_json(file):
+    with open(file, 'r') as json_file:
+        # Load the JSON data into a dictionary
+        dict = json.load(json_file, parse_float=float)
+
+    return dict
 
 
 def table_exists(database_file, table_name):

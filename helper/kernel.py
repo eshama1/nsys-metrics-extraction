@@ -116,7 +116,7 @@ def parse_kernel_data(data):
 
     if runtime_values and raw_overhead_data:
         results_dict.update(generate_statistics(raw_overhead_data, 'Launch Overhead'))
-        histogram_data = create_histogram(raw_duration_data, bins=10, powers=False, base=False,
+        histogram_data = create_histogram(raw_overhead_data, bins=10, powers=False, base=False,
                                           convert_bytes=False, return_bins=False)
         results_dict['Launch Overhead']['Distribution'] = histogram_data
     else:
@@ -124,7 +124,7 @@ def parse_kernel_data(data):
 
     if runtime_values and raw_slack_data:
         results_dict.update(generate_statistics(raw_slack_data, 'Slack'))
-        histogram_data = create_histogram(raw_duration_data, bins=10, powers=False, base=False,
+        histogram_data = create_histogram(raw_slack_data, bins=10, powers=False, base=False,
                                           convert_bytes=False, return_bins=False)
         results_dict['Slack']['Distribution'] = histogram_data
     else:

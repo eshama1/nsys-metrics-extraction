@@ -10,7 +10,7 @@ MAX_WORKERS = 12
 
 def file_args_checking(args):
     extract_data = False
-    output_data = False
+    output_data = True
     file_labels = None
 
     if args.data_file and not args.json_file:
@@ -182,6 +182,14 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return f"{s} {size_name[i]}"
 
+def convert_duration(duration):
+    if duration == 0:
+        return "0"
+    size_name = ("", "K", "M", "G", "T", "P", "E", "Z", "Y")
+    i = int(np.floor(np.log10(duration) / 3))
+    p = np.power(10, i * 3)
+    s = round(duration / p, 2)
+    return f"{s}{size_name[i]}"
 
 def expand_bins(data, bin_edges):
     expanded_bin_edges = []
@@ -241,7 +249,7 @@ def create_histogram(data, bins=10, powers=False, base=False, convert_bytes=Fals
                 bin_labels = [f'{convert_size(left)} to {convert_size(right)}' for left, right in
                               zip(bin_edges[:-1], bin_edges[1:])]
             else:
-                bin_labels = [f'{left} to {right}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
+                bin_labels = [f'{convert_duration(left)} to {convert_duration(right)}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
 
             if not isinstance(bin_centers, list):
                 bin_centers = bin_centers.tolist()
@@ -254,7 +262,7 @@ def create_histogram(data, bins=10, powers=False, base=False, convert_bytes=Fals
             if convert_bytes:
                 bin_labels = [f'{convert_size(data[0])}']
             else:
-                bin_labels = [f'{data[0]}']
+                bin_labels = [f'{convert_duration(data[0])}']
 
         histogram_data = {
             "Bin Centers": bin_centers,

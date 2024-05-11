@@ -151,7 +151,7 @@ def run(args):
         output_dir = temp
     else:
         output_dir = "./output/"
-        os.makedirs(dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
     extracted_data = {}
 

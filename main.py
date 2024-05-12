@@ -10,6 +10,7 @@ from helper.communication import QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS,
 from helper.general import *
 from helper.kernel import parallel_parse_kernel_data, QUERY_KERNEL, QUERY_KERNEL_STATS, KERNEL_REQUIRED_TABLES, \
     parallel_create_general_kernel_stats
+from helper.tables_and_graphs import generation_tables_and_figures
 from helper.transfer import parallel_parse_transfer_data, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, \
     TRANSFER_REQUIRED_TABLES, create_specific_transfer_stats
 
@@ -23,6 +24,13 @@ flags.DEFINE_boolean('no_kernel_metrics', False, "export kernel metrics", short_
 flags.DEFINE_boolean('no_transfer_metrics', False, "export transfer metrics", short_name='ntm')
 flags.DEFINE_boolean('no_communication_metrics', False, "export communication metrics", short_name='ncm')
 flags.DEFINE_boolean('no_save_data', False, "Save metrics to JSON file", short_name='nsd')
+
+# Graphics and Table Flags
+flags.DEFINE_boolean('no_metrics_output', None, "disable metrics export after extraction", short_name='nmo')
+flags.DEFINE_boolean('no_compare_metrics_output', False, "disable comparison metrics export (multi-file only)", short_name='ncmo')
+flags.DEFINE_boolean('no_general_metrics_output', False, "disable general metrics export (Kernel, Transfer, Communication)", short_name='ngmo')
+flags.DEFINE_boolean('no_specific_metrics_output', False, "disable specific metrics export (Duration, Size, Slack, Overhead, etc)", short_name='nsmo')
+flags.DEFINE_boolean('no_individual_metrics_output', False, "disable individual metrics export (individual kernel, transfer, communication statistics)", short_name='nimo')
 flags.DEFINE_integer('max_workers', None, "Number of threads to split work (Default to CPU count)", short_name='mw')
 FLAGS = flags.FLAGS
 
@@ -127,7 +135,7 @@ def create_statistics_from_file(database_file, output_dir):
             comm_statistics = create_statistics(database_file, QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS,
                                                 metric_type=COMMUNICATION_STATS)
             full_statistics['Communication Statistics'] = {'Individual Communications': comm_statistics}
-            full_statistics['Communication Statistics'].update(create_specific_communication_stats(kernel_statistics))
+            full_statistics['Communication Statistics'].update(create_specific_communication_stats(comm_statistics))
 
     if not FLAGS.no_save_data and full_statistics:
         database_file_JSON = output_dir + database_file.split('.')[0] + '_parsed_stats.json'
@@ -167,6 +175,10 @@ def run(args):
                 extracted_data[file_labels[i]] = import_from_json(file)
         else:
             extracted_data.update(import_from_json(files))
+
+    if output_data and extracted_data:
+        no_compare = False if num_files < 2 and not args.no_compare_metrics_output else True
+        generation_tables_and_figures(extracted_data, no_compare, args.no_general_metrics_output, args.no_specific_metrics_output, args.no_individual_metrics_output, num_files)
 
 
 

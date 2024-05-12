@@ -197,7 +197,7 @@ def create_specific_communication_stats(comm_stats, handle_outliers=False):
     if handle_outliers and cluster_data: cluster_data = remove_outliers(cluster_data)
     if combined_raw_data:
         dict.update(generate_statistics(combined_raw_data, "Execution Duration", disable_raw=True))
-        dict["Execution Duration"]['Histogram'] = create_histogram(combined_raw_data)
+        dict["Execution Duration"]['Distribution'] = create_histogram(combined_raw_data)
     if cluster_data:
         dict["Execution Duration"]['k-mean'] = {'Raw Data': cluster_data}
 

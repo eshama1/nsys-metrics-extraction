@@ -146,6 +146,7 @@ def generate_transfer_stats(transfers):
 
         histogram_dict['Histogram'] = bandwidth_distro
         transfer_data['Bandwidth Distribution'] = histogram_dict
+        transfer_data['Bandwidth Distribution']['Raw Data'] = temp_bandwidth
     else:
         transfer_data['Bandwidth Distribution'] = None
 
@@ -205,10 +206,10 @@ def create_specific_transfer_stats(transfer_stats, handle_outliers=False):
 
     if combined_raw_duration_data:
         dict.update(generate_statistics(combined_raw_duration_data, 'Transfer Durations', disable_raw=True))
-        dict['Transfer Durations']['Histogram'] = create_histogram(combined_raw_duration_data)
+        dict['Transfer Durations']['Distribution'] = create_histogram(combined_raw_duration_data)
     if combined_raw_size_data:
         dict.update(generate_statistics(combined_raw_size_data, 'Transfer Size', disable_raw=True))
-        dict['Transfer Size']['Histogram'] = create_histogram(combined_raw_size_data)
+        dict['Transfer Size']['Distribution'] = create_histogram(combined_raw_size_data)
     if duration_cluster_data:
         dict['Transfer Durations']['k-mean'] = {'Raw Data': duration_cluster_data}
     if size_cluster_data:

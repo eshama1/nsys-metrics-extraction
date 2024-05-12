@@ -171,7 +171,7 @@ def create_specific_kernel_stats(kernel_stats, label, handle_outliers=False):
     if handle_outliers and cluster_data: cluster_data = remove_outliers(cluster_data)
     if combined_raw_data:
         dict.update(generate_statistics(combined_raw_data, label, disable_raw=True))
-        dict[label]['Histogram'] = create_histogram(combined_raw_data)
+        dict[label]['Distribution'] = create_histogram(combined_raw_data)
     if cluster_data:
         dict[label]['k-mean'] = {'Raw Data': cluster_data}
 

@@ -114,16 +114,16 @@ def generate_transfer_stats(transfers):
     histgram_bins = []
 
     for _, size, duration in transfers[1]:
-        transfer_sizes.append(size)
-        transfer_durations.append(duration)
-        temp_bandwidth.append((size, (size * 953.674) / duration))
+        transfer_sizes.append ( size )
+        transfer_durations.append ( duration )
+        temp_bandwidth.append ( (size, size / (duration * (10**9)))) # convert from B/ns to B/s
 
     transfer_data = {}
 
     if transfer_sizes:
-        transfer_data.update(generate_statistics(transfer_sizes, "Transfer Size"))
-        histogram_data, returned_hist_data = create_histogram(transfer_sizes, bins=10, powers=True, base=False,
-                                                              convert_bytes=True, return_bins=True)
+        transfer_data.update ( generate_statistics ( transfer_sizes, "Transfer Size" ) )
+        histogram_data, returned_hist_data = create_histogram ( transfer_sizes, bins=10, powers=True, base=False,
+                                                                convert_bytes=True, return_bins=True )
         if returned_hist_data:
             histgram_bins, histogram_dict = returned_hist_data
         transfer_data['Transfer Size']['Distribution'] = histogram_data
@@ -131,18 +131,18 @@ def generate_transfer_stats(transfers):
         transfer_data['Transfer Size'] = None
 
     if transfer_durations:
-        transfer_data.update(generate_statistics(transfer_durations, "Transfer Durations"))
-        histogram_data = create_histogram(transfer_durations, bins=10, powers=False, base=False, convert_bytes=False)
+        transfer_data.update ( generate_statistics ( transfer_durations, "Transfer Durations" ) )
+        histogram_data = create_histogram ( transfer_durations, bins=10, powers=False, base=False, convert_bytes=False )
         transfer_data['Transfer Durations']['Distribution'] = histogram_data
     else:
         transfer_data['Transfer Durations'] = None
 
     if histgram_bins:
-        bandwidth_distro = [[] for _ in range(len(histgram_bins))]
-        for index, (start, end) in enumerate(histgram_bins):
+        bandwidth_distro = [[] for _ in range ( len ( histgram_bins ) )]
+        for index, (start, end) in enumerate ( histgram_bins ):
             for size, bandwidth in temp_bandwidth:
                 if start <= size < end:
-                    bandwidth_distro[index].append(bandwidth)
+                    bandwidth_distro[index].append ( bandwidth )
 
         histogram_dict['Histogram'] = bandwidth_distro
         transfer_data['Bandwidth Distribution'] = histogram_dict
@@ -154,21 +154,21 @@ def generate_transfer_stats(transfers):
 
 
 def parallel_parse_transfer_data(queries_res):
-    total_tasks = len(queries_res)
+    total_tasks = len ( queries_res )
     completed_tasks = 0
 
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+    with ThreadPoolExecutor ( max_workers=MAX_WORKERS ) as executor:
         futures = []
         for data in queries_res:
-            future = executor.submit(generate_transfer_stats, data)
-            futures.append(future)
+            future = executor.submit ( generate_transfer_stats, data )
+            futures.append ( future )
 
         results = []
-        for future in as_completed(futures):
-            results.append(future.result())
+        for future in as_completed ( futures ):
+            results.append ( future.result () )
             completed_tasks += 1
-            if int((completed_tasks / total_tasks) * 100) % 10 == 0:
-                logging.info(f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%")
+            if int ( (completed_tasks / total_tasks) * 100 ) % 10 == 0:
+                logging.info ( f"Progress: {(completed_tasks / total_tasks) * 100:.1f}%" )
 
     return results
 
@@ -180,36 +180,36 @@ def create_specific_transfer_stats(transfer_stats, handle_outliers=False):
     combined_raw_duration_data = []
     combined_raw_size_data = []
 
-    for transfer_id, transfer_info in transfer_stats.items():
+    for transfer_id, transfer_info in transfer_stats.items ():
         if transfer_info:
             if transfer_info['Transfer Size']:
                 if transfer_info['Transfer Size']["Raw Data"]:
-                    combined_raw_size_data.extend(transfer_info['Transfer Size']["Raw Data"])
+                    combined_raw_size_data.extend ( transfer_info['Transfer Size']["Raw Data"] )
                 if transfer_info['Transfer Size']['Mean'] and transfer_info['Transfer Size'][
                     'Median'] and transfer_info[
                     "Instance"]:
-                    size_cluster_data.append([transfer_info['Transfer Size']['Mean'],
-                                              transfer_info['Transfer Size']['Median'],
-                                              transfer_info["Instance"]])
+                    size_cluster_data.append ( [transfer_info['Transfer Size']['Mean'],
+                                                transfer_info['Transfer Size']['Median'],
+                                                transfer_info["Instance"]] )
             if transfer_info['Transfer Durations']:
                 if transfer_info['Transfer Durations']["Raw Data"]:
-                    combined_raw_duration_data.extend(transfer_info['Transfer Durations']["Raw Data"])
+                    combined_raw_duration_data.extend ( transfer_info['Transfer Durations']["Raw Data"] )
                 if transfer_info['Transfer Durations']['Mean'] and transfer_info['Transfer Durations'][
                     'Median'] and transfer_info[
                     "Instance"]:
-                    duration_cluster_data.append([transfer_info['Transfer Durations']['Mean'],
-                                                  transfer_info['Transfer Durations']['Median'],
-                                                  transfer_info["Instance"]])
+                    duration_cluster_data.append ( [transfer_info['Transfer Durations']['Mean'],
+                                                    transfer_info['Transfer Durations']['Median'],
+                                                    transfer_info["Instance"]] )
 
-    if handle_outliers and duration_cluster_data: duration_cluster_data = remove_outliers(duration_cluster_data)
-    if handle_outliers and size_cluster_data: size_cluster_data = remove_outliers(size_cluster_data)
+    if handle_outliers and duration_cluster_data: duration_cluster_data = remove_outliers ( duration_cluster_data )
+    if handle_outliers and size_cluster_data: size_cluster_data = remove_outliers ( size_cluster_data )
 
     if combined_raw_duration_data:
-        dict.update(generate_statistics(combined_raw_duration_data, 'Transfer Durations', disable_raw=True))
-        dict['Transfer Durations']['Distribution'] = create_histogram(combined_raw_duration_data)
+        dict.update ( generate_statistics ( combined_raw_duration_data, 'Transfer Durations', disable_raw=True ) )
+        dict['Transfer Durations']['Distribution'] = create_histogram ( combined_raw_duration_data )
     if combined_raw_size_data:
-        dict.update(generate_statistics(combined_raw_size_data, 'Transfer Size', disable_raw=True))
-        dict['Transfer Size']['Distribution'] = create_histogram(combined_raw_size_data)
+        dict.update ( generate_statistics ( combined_raw_size_data, 'Transfer Size', disable_raw=True ) )
+        dict['Transfer Size']['Distribution'] = create_histogram ( combined_raw_size_data )
     if duration_cluster_data:
         dict['Transfer Durations']['k-mean'] = {'Raw Data': duration_cluster_data}
     if size_cluster_data:

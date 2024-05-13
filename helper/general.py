@@ -35,9 +35,9 @@ def file_args_checking(args):
         files = args.data_file if extract_data else args.json_file
 
     if args.no_metrics_output:
-        output_data = args.no_metrics_output
+        output_data = not args.no_metrics_output
 
-    return files, num_files, file_labels,output_data, extract_data
+    return files, num_files, file_labels, output_data, extract_data
 
 
 def import_from_json(file):

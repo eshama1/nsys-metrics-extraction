@@ -116,7 +116,7 @@ def generate_transfer_stats(transfers):
     for _, size, duration in transfers[1]:
         transfer_sizes.append ( size )
         transfer_durations.append ( duration )
-        temp_bandwidth.append ( (size, size / (duration * (10**9)))) # convert from B/ns to B/s
+        temp_bandwidth.append ( (size, size / (duration / (10**9)))) # convert from B/ns to B/s
 
     transfer_data = {}
 

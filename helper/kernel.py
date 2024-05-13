@@ -57,6 +57,8 @@ WITH
             end AS runtime_end
         FROM
             CUPTI_ACTIVITY_KIND_RUNTIME
+        WHERE
+            eventClass != 67
     )
 SELECT
     KS.kernel_id AS "ID",

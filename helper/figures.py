@@ -1,36 +1,38 @@
 import os
 
 import numpy as np
+from absl import logging
 from matplotlib import pyplot as plt, ticker
+from matplotlib.ticker import ScalarFormatter
 from sklearn.cluster import KMeans
 
 
 def format_power_2_ticks(value, _):
     if value >= 2 ** 50:
-        return f'{value / 2 ** 50:.0f}P'
+        return f'{value / 2 ** 50:.2f}P'
     elif value >= 2 ** 40:
-        return f'{value / 2 ** 40:.0f}T'
+        return f'{value / 2 ** 40:.2f}T'
     elif value >= 2 ** 30:
-        return f'{value / 2 ** 30:.0f}G'
+        return f'{value / 2 ** 30:.2f}G'
     elif value >= 2 ** 20:
-        return f'{value / 2 ** 20:.0f}M'
+        return f'{value / 2 ** 20:.2f}M'
     elif value >= 2 ** 10:
-        return f'{value / 2 ** 10:.0f}K'
+        return f'{value / 2 ** 10:.2f}K'
     else:
         return str ( value )
 
 
 def format_power_10_ticks(value, _):
     if value >= 1e15:
-        return f'{value / 1e15:.0f}P'
+        return f'{value / 1e15:.2f}P'
     elif value >= 1e12:
-        return f'{value / 1e12:.0f}T'
+        return f'{value / 1e12:.2f}T'
     elif value >= 1e9:
-        return f'{value / 1e9:.0f}G'
+        return f'{value / 1e9:.2f}G'
     elif value >= 1e6:
-        return f'{value / 1e6:.0f}M'
+        return f'{value / 1e6:.2f}M'
     elif value >= 1e3:
-        return f'{value / 1e3:.0f}K'
+        return f'{value / 1e3:.2f}K'
     else:
         return str ( value )
 
@@ -57,10 +59,8 @@ def create_and_plot_k_mean_statistics(cluster_data, title, parent_dir):
     fig.savefig ( file, bbox_inches='tight' )
     plt.close ( fig )
 
-
     cluster_dir = parent_dir + '/cluster_options'
     os.makedirs ( cluster_dir, exist_ok=True )
-
 
     for n_clusters in range ( 1, max_clusters + 1 ):
         kmeans = KMeans ( n_clusters=n_clusters, random_state=42 )
@@ -86,6 +86,62 @@ def create_and_plot_k_mean_statistics(cluster_data, title, parent_dir):
         file = cluster_dir + "/" + title.split ( " " )[0].replace ( '-', '_' ) + f'_k_{n_clusters}_mean_cluster.png'
         fig.savefig ( file, bbox_inches='tight' )
         plt.close ( fig )
+
+
+def plot_combined_data(combined_data, title, metric, parent_dir, size=False):
+    data = []
+    labels = []
+
+    for name, sub_dict in combined_data.items ():
+        if sub_dict[metric]["Raw Data"]:
+            labels.append ( name )
+            data.append ( sub_dict[metric]["Raw Data"] )
+
+    if len ( data ) < 2:
+        logging.error ( f'Raw Data Missing for: {title} Combined {metric}' )
+
+    fig, ax = plt.subplots ( 1, figsize=(10, 10) )
+    parts = ax.violinplot ( data, showmeans=True, showmedians=True )
+
+    for pc in parts['bodies']:
+        pc.set_facecolor ( 'skyblue' )
+        pc.set_edgecolor ( 'black' )
+        pc.set_alpha ( 0.7 )
+
+    parts['cmedians'].set_color ( 'blue' )
+    parts['cmedians'].set_linewidth ( 2 )
+    parts['cmins'].set_color ( 'red' )
+    parts['cmins'].set_linestyle ( '--' )
+    parts['cmaxes'].set_color ( 'green' )
+    parts['cmaxes'].set_linestyle ( '--' )
+    parts['cbars'].set_color ( 'black' )
+
+    ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
+    ax.xaxis.set_ticklabels ( labels )
+    ax.tick_params ( axis='x', rotation=45 )
+    ax.set_xlabel ( "Configuration" )
+
+    flat_data = [item for sublist in data for item in sublist]
+    min_value = np.min ( flat_data )
+    max_value = np.max ( flat_data )
+    magnitude_diff = np.log10 ( max_value ) - np.log10 ( min_value )
+    if magnitude_diff >= 1:
+        plt.yscale ( 'log', base=10 )
+    ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+    ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
+    if size:
+        ax.set_ylabel ( "Size (B)" )
+    else:
+        ax.set_ylabel ( "Time (ns)" )
+
+    ax.set_title ( f"{title} Combined {metric}" )
+
+    fig.tight_layout ()
+    fig.subplots_adjust ( top=0.95 )
+    file = parent_dir + "/" + title.split ( " " )[0].replace ( '-', '_' ) + '_' + metric.replace ( ' ',
+                                                                                                   '_' ) + '_combined_distribution.png'
+    fig.savefig ( file, bbox_inches='tight' )
+    plt.close ( fig )
 
 
 def plot_bandwidth_distribution(histogram_data, title, parent_dir):

@@ -177,8 +177,8 @@ def run(args):
             extracted_data.update(import_from_json(files))
 
     if output_data and extracted_data:
-        no_compare = False if num_files < 2 and not args.no_compare_metrics_output else True
-        generation_tables_and_figures(extracted_data, no_compare, args.no_general_metrics_output, args.no_specific_metrics_output, args.no_individual_metrics_output, num_files)
+        no_compare = True if num_files < 2 and not args.no_compare_metrics_output else False
+        generation_tables_and_figures(extracted_data, no_compare, args.no_general_metrics_output, args.no_specific_metrics_output, args.no_individual_metrics_output, num_files, output_dir)
 
 
 

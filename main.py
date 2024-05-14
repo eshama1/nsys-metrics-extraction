@@ -111,7 +111,7 @@ def create_statistics(database_file, first_query, raw_data_query, metric_type, s
 def create_statistics_from_file(database_file, output_dir):
     full_statistics = {}
 
-    logging.info("Starting extraction and creation of statistics from file")
+    logging.info(f"Starting extraction and creation of statistics from {database_file}")
 
     if not FLAGS.no_kernel_metrics:
         logging.info("Starting Kernel Statistics")
@@ -158,7 +158,7 @@ def run(args):
             temp.append(dir)
         output_dir = temp
     else:
-        output_dir = "./output/"
+        output_dir = f"./output/{files}"
         os.makedirs(output_dir, exist_ok=True)
 
     extracted_data = {}

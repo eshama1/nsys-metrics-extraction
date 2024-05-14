@@ -73,7 +73,7 @@ def mutiple_table_exists(database_file, table_name_list):
 
 def execute_query(conn, query, params=None):
     cursor = conn.cursor()
-    if params:
+    if params is not None or params == 0:
         key = params
         if not isinstance(params, tuple):
             params = (params,)
@@ -88,7 +88,7 @@ def execute_query(conn, query, params=None):
 def execute_query_in_thread(query_params, database_file):
     conn = sqlite3.connect(database_file)  # Create a new connection object in each thread
     try:
-        result = execute_query(conn, *query_params)
+        result = execute_query ( conn, *query_params )
     except sqlite3.Error as error:
         print("Error reading data from SQLite table:", error)
     finally:

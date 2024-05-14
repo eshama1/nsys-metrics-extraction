@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -13,7 +14,7 @@ def file_args_checking(args):
     output_data = True
     file_labels = None
 
-    if args.data_file and not args.json_file:
+    if args.data_file == None and not args.json_file:
         extract_data = True
 
     if extract_data:
@@ -22,7 +23,13 @@ def file_args_checking(args):
         num_files = args.json_file.count(".json")
 
     if num_files > 1:
-        files = args.data_file.split(" ") if extract_data else args.json_file.split(" ")
+
+        if extract_data:
+            files = [f.strip () + ".sqlite" for f in args.data_file.split ( ".sqlite" )]
+        else:
+            files = [f.strip () + ".json" for f in args.json_file.split ( ".json" )]
+
+        files = files[0:num_files]
 
         if not args.multi_data_label:
             raise app.UsageError("Must provide labels for multiple files extraction")

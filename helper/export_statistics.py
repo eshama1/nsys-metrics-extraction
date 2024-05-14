@@ -71,8 +71,8 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
     for sub_metric, sub_dict in item_dicts[labels[0]].items():
         if isinstance(sub_dict, dict) and 'Individual' not in sub_metric:
             name = item_name
-            plot_combined_data ( item_dicts, name, sub_metric, parent_dir )
-            export_combined_summary_stat_to_CSV ( item_dicts, parent_dir, name, sub_metric )
+            plot_combined_data ( item_dicts, name, sub_metric, parent_dir)
+            export_combined_summary_stat_to_CSV ( item_dicts, parent_dir, name, sub_metric)
             export_combined_summary_stat_to_latex ( item_dicts, parent_dir, name, sub_metric)
 
 
@@ -83,11 +83,11 @@ def find_common_keys_or_names(data_dict, kernels=False):
     for config, subdict in data_dict.items():
         if kernels:
             # Get kernel names
-            kernels = {value.get("Name") for value in subdict.values()}
+            items = {value.get("Name") for value in subdict.values()}
         else:
             # Get kernel keys
-            kernels = set(subdict.keys())
-        kernel_sets.append((config, kernels))
+            items = set(subdict.keys())
+        kernel_sets.append((config, items))
 
     # Find common kernels
     common_kernels = set.intersection(*[ks for _, ks in kernel_sets])

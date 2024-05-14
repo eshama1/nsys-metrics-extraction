@@ -88,12 +88,18 @@ def create_and_plot_k_mean_statistics(cluster_data, title, parent_dir):
         plt.close ( fig )
 
 
-def plot_combined_data(combined_data, title, metric, parent_dir, size=False):
+def plot_combined_data(combined_data, title, metric, parent_dir):
     data = []
     labels = []
 
     for name, sub_dict in combined_data.items ():
-        if sub_dict[metric]["Raw Data"]:
+        if sub_dict[metric]["Raw Data"] and metric == 'Bandwidth Distribution':
+            labels.append ( name )
+            temp = []
+            for transfer_size, bandwidth in sub_dict[metric]["Raw Data"]:
+                temp.append (bandwidth)
+            data.append (temp)
+        elif sub_dict[metric]["Raw Data"]:
             labels.append ( name )
             data.append ( sub_dict[metric]["Raw Data"] )
 
@@ -129,8 +135,10 @@ def plot_combined_data(combined_data, title, metric, parent_dir, size=False):
         plt.yscale ( 'log', base=10 )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
-    if size:
+    if 'Size' in metric:
         ax.set_ylabel ( "Size (B)" )
+    elif metric == 'Bandwidth Distribution':
+        ax.set_ylabel ( "Bandwidth (B/s)" )
     else:
         ax.set_ylabel ( "Time (ns)" )
 

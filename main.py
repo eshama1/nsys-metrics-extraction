@@ -10,7 +10,7 @@ from helper.communication import QUERY_COMMUNICATION, QUERY_COMMUNICATION_STATS,
 from helper.general import *
 from helper.kernel import parallel_parse_kernel_data, QUERY_KERNEL, QUERY_KERNEL_STATS, KERNEL_REQUIRED_TABLES, \
     parallel_create_general_kernel_stats
-from helper.tables_and_graphs import generation_tables_and_figures
+from helper.export_statistics import generation_tables_and_figures
 from helper.transfer import parallel_parse_transfer_data, QUERY_TRANSFERS, QUERY_TRANSFERS_STATS, \
     TRANSFER_REQUIRED_TABLES, create_specific_transfer_stats
 

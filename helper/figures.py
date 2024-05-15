@@ -1,10 +1,11 @@
 import os
-
 import numpy as np
 from absl import logging
 from matplotlib import pyplot as plt, ticker
 from matplotlib.ticker import ScalarFormatter
 from sklearn.cluster import KMeans
+
+from helper.general import convert_size
 
 
 def format_power_2_ticks(value, _):
@@ -83,25 +84,30 @@ def create_and_plot_k_mean_statistics(cluster_data, title, parent_dir):
         ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_2_ticks ) )
         fig.tight_layout ()
         fig.subplots_adjust ( top=0.95 )
-        file = cluster_dir + "/" + title.split ( " " )[0].replace ( '-', '_' ) + f'_k_{n_clusters}_mean_cluster.png'
+        file = cluster_dir + "/" + title.split ( " " )[0].replace ( ' ', '_' ) + f'_k_{n_clusters}_mean_cluster.png'
         fig.savefig ( file, bbox_inches='tight' )
         plt.close ( fig )
 
 
-def plot_combined_data(combined_data, title, metric, parent_dir):
+def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=False):
     data = []
     labels = []
 
-    for name, sub_dict in combined_data.items ():
-        if sub_dict[metric]["Raw Data"] and metric == 'Bandwidth Distribution':
+    if not raw_provided:
+        for name, sub_dict in combined_data.items ():
+            if sub_dict[metric]["Raw Data"] and metric == 'Bandwidth Distribution':
+                labels.append ( name )
+                temp = []
+                for transfer_size, bandwidth in sub_dict[metric]["Raw Data"]:
+                    temp.append ( bandwidth )
+                data.append ( temp )
+            elif sub_dict[metric]["Raw Data"]:
+                labels.append ( name )
+                data.append ( sub_dict[metric]["Raw Data"] )
+    else:
+        for name, sub_list in combined_data.items ():
             labels.append ( name )
-            temp = []
-            for transfer_size, bandwidth in sub_dict[metric]["Raw Data"]:
-                temp.append (bandwidth)
-            data.append (temp)
-        elif sub_dict[metric]["Raw Data"]:
-            labels.append ( name )
-            data.append ( sub_dict[metric]["Raw Data"] )
+            data.append ( sub_list )
 
     if len ( data ) < 2:
         logging.error ( f'Raw Data Missing for: {title} Combined {metric}' )
@@ -132,8 +138,8 @@ def plot_combined_data(combined_data, title, metric, parent_dir):
     max_value = np.max ( flat_data )
     magnitude_diff = np.log10 ( max_value ) - np.log10 ( min_value )
     if magnitude_diff >= 1:
-        ax.set_yscale ( 'log' , base=10)
-    ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+        ax.set_yscale ( 'log', base=10 )
+    ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     if 'Size' in metric:
         ax.set_ylabel ( "Size (B)" )
@@ -146,10 +152,115 @@ def plot_combined_data(combined_data, title, metric, parent_dir):
 
     fig.tight_layout ()
     fig.subplots_adjust ( top=0.95 )
-    file = parent_dir + "/" + title.split ( " " )[0].replace ( '-', '_' ) + '_' + metric.replace ( ' ',
-                                                                                                   '_' ) + '_combined_distribution.png'
+    file = parent_dir + "/" + title.replace ( ' ', '_' ) + '_' + metric.replace ( ' ', '_' ) + '_combined_distribution.png'
     fig.savefig ( file, bbox_inches='tight' )
     plt.close ( fig )
+
+
+def plot_combined_overall_bandwidth_distribution(combined_data, title, parent_dir):
+    data = []
+    labels = []
+
+    for name, sub_list in combined_data.items ():
+        labels.append ( name )
+        data.append ( sub_list[1] )
+
+    fig, ax = plt.subplots ( 1, figsize=(10, 10) )
+    parts = ax.violinplot ( data, showmeans=True, showmedians=True )
+
+    for pc in parts['bodies']:
+        pc.set_facecolor ( 'skyblue' )
+        pc.set_edgecolor ( 'black' )
+        pc.set_alpha ( 0.7 )
+
+    parts['cmedians'].set_color ( 'blue' )
+    parts['cmedians'].set_linewidth ( 2 )
+    parts['cmins'].set_color ( 'red' )
+    parts['cmins'].set_linestyle ( '--' )
+    parts['cmaxes'].set_color ( 'green' )
+    parts['cmaxes'].set_linestyle ( '--' )
+    parts['cbars'].set_color ( 'black' )
+
+    min_value = min ( min ( sublist ) for sublist in data )
+    ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
+    ax.set_title ( f'{title} Overall Combined Bandwidth Distribution' )
+    ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
+    ax.xaxis.set_ticklabels ( labels )
+    ax.tick_params ( axis='x', rotation=45 )
+    ax.set_xlabel ( "Configuration" )
+    ax.set_yscale ( 'log', base=10 )
+    ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
+    ax.set_ylabel ( "Bandwidth (B/s)" )
+
+    if min_value > 0:
+        min_value_power_of_ten = 10 ** int ( np.floor ( np.log10 ( min_value ) ) )
+        ax.set_ylim ( bottom=min_value_power_of_ten )
+
+    fig.tight_layout ()
+    fig.subplots_adjust ( top=0.95 )
+    file = parent_dir + '/Transfer_Statistics_Overall_Combined_Bandwidth_distribution.png'
+    fig.savefig ( file, bbox_inches='tight' )
+    plt.close ( fig )
+
+
+def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
+    all_sizes = []
+    for name, sub_list in combined_data.items():
+        sizes, bandwidths = zip(*sub_list)
+        all_sizes.extend(sizes)
+
+    quantiles = np.linspace ( 0, 1, 8 )
+    bin_edges = np.quantile ( all_sizes, quantiles )
+    fig, ax = plt.subplots(1, figsize=(10, 10))
+    num_configs = len(combined_data.items())
+    width_per_bin = 0.7 / num_configs
+
+    for i, (name, bandwidths) in enumerate(combined_data.items()):
+        binned_bandwidths = [[] for _ in range(len(bin_edges) - 1)]
+        for j in range(len(bin_edges) - 1):
+            bin_bandwidths = [bw for size, bw in bandwidths if bin_edges[j] <= size < bin_edges[j + 1]]
+            if bin_bandwidths:
+                binned_bandwidths[j] = bin_bandwidths
+        if binned_bandwidths:
+            for item in binned_bandwidths:
+                if len(item) == 0:
+                    item.append(0)
+
+            offset = (num_configs - 1) / 2
+            positions = np.arange ( len ( binned_bandwidths ) ) - offset + i * width_per_bin
+            parts = ax.violinplot ( binned_bandwidths, showmeans=True, showmedians=True,
+                                    positions=positions, widths=width_per_bin )
+
+            for pc in parts['bodies']:
+                pc.set_facecolor('C' + str(i))
+                pc.set_edgecolor('black')
+                pc.set_alpha(0.7)
+
+            parts['cmedians'].set_color('blue')
+            parts['cmedians'].set_linewidth(2)
+            parts['cmins'].set_color('red')
+            parts['cmins'].set_linestyle('--')
+            parts['cmaxes'].set_color('green')
+            parts['cmaxes'].set_linestyle('--')
+            parts['cbars'].set_color('black')
+
+        ax.plot([], [], color='C' + str(i), label=name)
+
+    ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+    ax.set_title(f'{title} Bandwidth Distribution by Transfer Size')
+    ax.set_xticks(np.arange(len(bin_edges) - 1))
+    bin_labels = [f'{convert_size(right)}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
+    ax.set_xticklabels(bin_labels, rotation=45, ha='right')  # Adjust rotation and alignment for readability
+    ax.set_xlabel("Data Transfer Size")
+    ax.set_yscale('log')
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
+    ax.set_ylabel("Bandwidth (B/s)")
+    ax.legend()
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9, bottom=0.15)  # Adjust top and bottom margins
+    file = parent_dir + '/' + title.replace(' ', '_') + '_Combined_Bandwidth_distribution_By_Size.png'
+    fig.savefig(file, bbox_inches='tight')
+    plt.close(fig)
 
 
 def plot_bandwidth_distribution(histogram_data, title, parent_dir):
@@ -180,7 +291,7 @@ def plot_bandwidth_distribution(histogram_data, title, parent_dir):
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
     ax.set_title ( title )
     ax.set_xlabel ( "Transfer size range" )
-    ax.set_yscale ( 'log' , base=10)
+    ax.set_yscale ( 'log', base=10 )
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     ax.set_ylabel ( "Bandwidth (B/s)" )
 
@@ -222,3 +333,4 @@ def plot_frequency_distribution(histogram_data, title, xlabel, parent_dir):
 
     fig.savefig ( file, bbox_inches='tight' )
     plt.close ( fig )
+

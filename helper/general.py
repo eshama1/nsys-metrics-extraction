@@ -14,7 +14,7 @@ def file_args_checking(args):
     output_data = True
     file_labels = None
 
-    if args.data_file == None and not args.json_file:
+    if args.data_file != None and args.json_file == None:
         extract_data = True
 
     if extract_data:

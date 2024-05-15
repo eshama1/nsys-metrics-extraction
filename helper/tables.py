@@ -228,7 +228,8 @@ def export_combined_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name)
 
 def export_combined_overall_summary_stat_to_latex(data_dict, parent_dir, title, stat_name):
     stat_name_replaced = stat_name.replace ( ' ', '_' )
-    latex_filename = parent_dir + f'/{title}_{stat_name_replaced}_combined_summary_statistics.tex'
+    title_replaced = title.replace ( ' ', '_' )
+    latex_filename = parent_dir + f'/{title_replaced}_{stat_name_replaced}_combined_summary_statistics.tex'
     safe_title = latex_safe_string ( title )
 
     if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
@@ -256,13 +257,14 @@ def export_combined_overall_summary_stat_to_latex(data_dict, parent_dir, title, 
                 latexfile.write ( f"{name} & {mean} & {median} & {minimum} & {maximum} & {std_dev} \\\\\n" )
                 latexfile.write ( "\\hline\n" )
         latexfile.write ( "\\end{tabular}\n" )
-        latexfile.write ( "\\label{tab:" + stat_name_replaced + "_summary_stats}\n" )
+        latexfile.write ( "\\label{tab:" + title_replaced + '_' + stat_name_replaced + "_summary_stats}\n" )
         latexfile.write ( "\\end{table}\n" )
 
 
 def export_combined_overall_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name):
     stat_name_replaced = stat_name.replace ( ' ', '_' )
-    csv_filename = parent_dir + f'/{title}_{stat_name_replaced}_combined_summary_statistics.csv'
+    title_replaced = title.replace ( ' ', '_' )
+    csv_filename = parent_dir + f'/{title_replaced}_{stat_name_replaced}_combined_summary_statistics.csv'
 
     with open ( csv_filename, 'w', newline='' ) as csvfile:
         writer = csv.writer ( csvfile )

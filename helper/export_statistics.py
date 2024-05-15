@@ -2,8 +2,11 @@ import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
+from absl import logging
+
 from helper.figures import create_and_plot_k_mean_statistics, plot_bandwidth_distribution, plot_frequency_distribution, \
-    plot_combined_data
+    plot_combined_data, plot_combined_overall_bandwidth_distribution, plot_binned_bandwidth_distribution, \
+    plot_combined_frequency_distribution
 from helper.general import MAX_WORKERS
 from helper.tables import export_single_general_stat_to_latex, export_single_general_stat_to_CSV, \
     export_summary_stat_to_latex, export_summary_stat_to_CSV, export_overall_summary_stat_to_latex, \
@@ -74,26 +77,57 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
                       labels}
 
         for sub_metric, sub_dict in item_dicts[labels[0]].items ():
-            if isinstance ( sub_dict, dict ) and 'Individual' not in sub_metric:
+            if isinstance ( sub_dict, dict ) and 'Individual' not in sub_metric and 'Bandwidth Distribution' != sub_metric:
                 name = item_name
                 plot_combined_data ( item_dicts, name, sub_metric, parent_dir )
                 export_combined_summary_stat_to_CSV ( item_dicts, parent_dir, name, sub_metric )
                 export_combined_summary_stat_to_latex ( item_dicts, parent_dir, name, sub_metric )
+            elif 'Bandwidth Distribution' == sub_metric:
+                raw_bandwidth_data = {}
+                for label in labels:
+                    data = []
+                    if item_dicts[label]['Bandwidth Distribution'] is not None and item_dicts[label]['Bandwidth Distribution']['Raw Data'] is not None:
+                            data.extend ( item_dicts[label]['Bandwidth Distribution']['Raw Data'])
+                    if len(data) > 0:
+                        raw_bandwidth_data[label] = data
+                if len(raw_bandwidth_data) > 1:
+                    plot_binned_bandwidth_distribution ( raw_bandwidth_data, name, parent_dir )
 
     else:
         labels = list(data_dict.keys())
         item_name = list(list(data_dict.values())[0].keys())
+        individual = next((item for item in item_name if 'Individual' in item), None)
         item_name = [item for item in item_name if 'Individual' not in item]
         name = parent_dir.split ( '/' )[-1]
+        raw_individual_data = {}
+        item_dicts = {}
 
         for metric in item_name:
-            item_dicts = {label: data_dict[label][metric] for label in labels}
+            for label in labels:
+                data = []
+                keys = data_dict[label][individual].keys()
+                for key in keys:
+                    if data_dict[label][individual][key][metric] is not None and data_dict[label][individual][key][metric]['Raw Data'] is not None:
+                        data.extend ( data_dict[label][individual][key][metric]['Raw Data'] )
+                raw_individual_data[label] = data
+                item_dicts[label] = data_dict[label][metric]
+
+            plot_combined_data ( raw_individual_data, name, metric, parent_dir, raw_provided=True)
+            plot_combined_frequency_distribution(raw_individual_data, name, metric, parent_dir)
             export_combined_overall_summary_stat_to_CSV ( item_dicts, parent_dir, name, metric )
             export_combined_overall_summary_stat_to_latex ( item_dicts, parent_dir, name, metric )
 
-
-
-
+        if name == 'Transfer Statistics':
+            raw_bandwidth_data = {}
+            for label in labels:
+                data = []
+                keys = data_dict[label][individual].keys()
+                for key in keys:
+                    if data_dict[label][individual][key]['Bandwidth Distribution'] is not None and data_dict[label][individual][key]['Bandwidth Distribution']['Raw Data'] is not None:
+                        data.extend ( data_dict[label][individual][key]['Bandwidth Distribution']['Raw Data'] )
+                raw_bandwidth_data[label] = data
+            plot_combined_overall_bandwidth_distribution ( raw_bandwidth_data, name, parent_dir )
+            plot_binned_bandwidth_distribution ( raw_bandwidth_data, name, parent_dir )
 
 
 def find_common_keys_or_names(data_dict, kernels=False):
@@ -212,8 +246,10 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
 
 
 def generation_tables_and_figures(data_dict, no_comparison, no_general, no_specific, no_individual, num_files, output_dir):
+    logging.info("Starting Figure and Table Extraction")
 
     if num_files < 2:
+        logging.info ( "Starting Figure and Table Extraction" )
         extract_general_dict ( data_dict, output_dir, no_general, no_specific, no_individual)
     else:
         for i, (sub_dir, sub_dict) in enumerate(data_dict.items ()):
@@ -224,8 +260,8 @@ def generation_tables_and_figures(data_dict, no_comparison, no_general, no_speci
             os.makedirs ( temp_parent_dir, exist_ok=True )
             extract_general_dict ( sub_dict, temp_parent_dir, no_general, no_specific, no_individual )
 
-    if not no_comparison:
-        temp_parent_dir = './output/combined_statistics'
+    if not no_comparison and  num_files > 1:
+        temp_parent_dir = './output/Combined Statistics'
         os.makedirs ( temp_parent_dir, exist_ok=True )
         extract_general_dict(data_dict, temp_parent_dir, combined=True)
 

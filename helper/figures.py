@@ -132,7 +132,7 @@ def plot_combined_data(combined_data, title, metric, parent_dir):
     max_value = np.max ( flat_data )
     magnitude_diff = np.log10 ( max_value ) - np.log10 ( min_value )
     if magnitude_diff >= 1:
-        plt.yscale ( 'log', base=10 )
+        ax.set_yscale ( 'log' , base=10)
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     if 'Size' in metric:
@@ -180,7 +180,7 @@ def plot_bandwidth_distribution(histogram_data, title, parent_dir):
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
     ax.set_title ( title )
     ax.set_xlabel ( "Transfer size range" )
-    plt.yscale ( 'log', base=10 )
+    ax.set_yscale ( 'log' , base=10)
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     ax.set_ylabel ( "Bandwidth (B/s)" )
 

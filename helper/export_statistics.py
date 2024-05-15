@@ -7,7 +7,8 @@ from helper.figures import create_and_plot_k_mean_statistics, plot_bandwidth_dis
 from helper.general import MAX_WORKERS
 from helper.tables import export_single_general_stat_to_latex, export_single_general_stat_to_CSV, \
     export_summary_stat_to_latex, export_summary_stat_to_CSV, export_overall_summary_stat_to_latex, \
-    export_summary_summary_stat_to_CSV, export_combined_summary_stat_to_CSV, export_combined_summary_stat_to_latex
+    export_summary_summary_stat_to_CSV, export_combined_summary_stat_to_CSV, export_combined_summary_stat_to_latex, \
+    export_combined_overall_summary_stat_to_CSV, export_combined_overall_summary_stat_to_latex
 
 # Ignore Future warnings
 warnings.filterwarnings ( 'ignore', category=FutureWarning )
@@ -59,21 +60,39 @@ def base_generate_tables_and_figures(data_dict, parent_dir, summary_combined_tab
     return None
 
 
-def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_info, kernels=False):
+def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_info=None, kernels=False):
 
-    item_name = combined_info[0]
-    labels = combined_info[1:]
+    if combined_info is not None:
+        item_name = combined_info[0]
+        labels = combined_info[1:]
 
-    if kernels:
-        keys = {label: next(key for key, value in data_dict[label].items() if value.get('Name') == item_name) for label in labels}
+        if kernels:
+            keys = {label: next ( key for key, value in data_dict[label].items () if value.get ( 'Name' ) == item_name )
+                    for label in labels}
 
-    item_dicts = {label: data_dict[label][keys[label]] if kernels else data_dict[label][item_name] for label in labels}
-    for sub_metric, sub_dict in item_dicts[labels[0]].items():
-        if isinstance(sub_dict, dict) and 'Individual' not in sub_metric:
-            name = item_name
-            plot_combined_data ( item_dicts, name, sub_metric, parent_dir)
-            export_combined_summary_stat_to_CSV ( item_dicts, parent_dir, name, sub_metric)
-            export_combined_summary_stat_to_latex ( item_dicts, parent_dir, name, sub_metric)
+        item_dicts = {label: data_dict[label][keys[label]] if kernels else data_dict[label][item_name] for label in
+                      labels}
+
+        for sub_metric, sub_dict in item_dicts[labels[0]].items ():
+            if isinstance ( sub_dict, dict ) and 'Individual' not in sub_metric:
+                name = item_name
+                plot_combined_data ( item_dicts, name, sub_metric, parent_dir )
+                export_combined_summary_stat_to_CSV ( item_dicts, parent_dir, name, sub_metric )
+                export_combined_summary_stat_to_latex ( item_dicts, parent_dir, name, sub_metric )
+
+    else:
+        labels = list(data_dict.keys())
+        item_name = list(list(data_dict.values())[0].keys())
+        item_name = [item for item in item_name if 'Individual' not in item]
+        name = parent_dir.split ( '/' )[-1]
+
+        for metric in item_name:
+            item_dicts = {label: data_dict[label][metric] for label in labels}
+            export_combined_overall_summary_stat_to_CSV ( item_dicts, parent_dir, name, metric )
+            export_combined_overall_summary_stat_to_latex ( item_dicts, parent_dir, name, metric )
+
+
+
 
 
 
@@ -144,7 +163,10 @@ def generate_general_tables_and_figures(data_dict, parent_dir, no_specific=False
                 os.makedirs ( temp_parent_dir, exist_ok=True )
                 generate_specific_tables_and_figures ( temp_dict, temp_parent_dir, combined=True )
 
-    if not no_specific and not combined:
+    if not no_specific and combined:
+        kernels = True if 'Kernels' in parent_dir else False
+        base_generate_combined_tables_and_figures ( data_dict, parent_dir, kernels=kernels)
+    elif not no_specific:
         base_generate_tables_and_figures ( data_dict, parent_dir, summary_combined_tables=True )
 
     return None
@@ -191,13 +213,16 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
 
 def generation_tables_and_figures(data_dict, no_comparison, no_general, no_specific, no_individual, num_files, output_dir):
 
-    # if num_files < 2:
-    #     extract_general_dict ( data_dict, output_dir, no_general, no_specific, no_individual)
-    # else:
-    #     for i, (sub_dir, sub_dict) in enumerate(data_dict.items ()):
-    #         temp_parent_dir = output_dir[i] + '/' + sub_dir
-    #         os.makedirs ( temp_parent_dir, exist_ok=True )
-    #         extract_general_dict ( sub_dict, temp_parent_dir, no_general, no_specific, no_individual )
+    if num_files < 2:
+        extract_general_dict ( data_dict, output_dir, no_general, no_specific, no_individual)
+    else:
+        for i, (sub_dir, sub_dict) in enumerate(data_dict.items ()):
+            if sub_dir not in output_dir[i]:
+                temp_parent_dir = output_dir[i] + '/' + sub_dir
+            else:
+                temp_parent_dir = output_dir[i]
+            os.makedirs ( temp_parent_dir, exist_ok=True )
+            extract_general_dict ( sub_dict, temp_parent_dir, no_general, no_specific, no_individual )
 
     if not no_comparison:
         temp_parent_dir = './output/combined_statistics'

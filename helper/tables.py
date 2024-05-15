@@ -224,3 +224,62 @@ def export_combined_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name)
                 writer.writerow ( [name, time_percent, time_duration, instances] +
                                   [stats[stat_name].get ( stat, '' ) for stat in
                                    ['Mean', 'Median', 'Minimum', 'Maximum', 'Standard Deviation']] )
+
+
+def export_combined_overall_summary_stat_to_latex(data_dict, parent_dir, title, stat_name):
+    stat_name_replaced = stat_name.replace ( ' ', '_' )
+    latex_filename = parent_dir + f'/{title}_{stat_name_replaced}_combined_summary_statistics.tex'
+    safe_title = latex_safe_string ( title )
+
+    if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
+        header = "\\textbf{Name} & \\textbf{Mean (ns)} & \\textbf{Median (ns)} & \\textbf{Minimum (ns)} & \\textbf{Maximum (ns)} & \\textbf{Standard Deviation} \\\\\n"
+    else:
+        header = "\\textbf{Name} &  \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
+
+    with open ( latex_filename, 'w' ) as latexfile:
+        latexfile.write ( "\\begin{table}[ht]\n" )
+        latexfile.write ( "\\centering\n" )
+        latexfile.write ( "\\caption{" + safe_title + " Combined  " + stat_name + " Summary Statistics}\n" )
+        latexfile.write ( "\\begin{tabular}{|c|c|c|c|c|c|}\n" )
+        latexfile.write ( "\\hline\n" )
+        latexfile.write (header)
+        latexfile.write ( "\\hline\n" )
+        for metric, stats in data_dict.items ():
+            name = metric
+            name = latex_safe_string ( name )
+            if isinstance ( stats, dict ):
+                mean = stats.get ( 'Mean', '' )
+                median = stats.get ( 'Median', '' )
+                minimum = stats.get ( 'Minimum', '' )
+                maximum = stats.get ( 'Maximum', '' )
+                std_dev = stats.get ( 'Standard Deviation', '' )
+                latexfile.write ( f"{name} & {mean} & {median} & {minimum} & {maximum} & {std_dev} \\\\\n" )
+                latexfile.write ( "\\hline\n" )
+        latexfile.write ( "\\end{tabular}\n" )
+        latexfile.write ( "\\label{tab:" + stat_name_replaced + "_summary_stats}\n" )
+        latexfile.write ( "\\end{table}\n" )
+
+
+def export_combined_overall_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name):
+    stat_name_replaced = stat_name.replace ( ' ', '_' )
+    csv_filename = parent_dir + f'/{title}_{stat_name_replaced}_combined_summary_statistics.csv'
+
+    with open ( csv_filename, 'w', newline='' ) as csvfile:
+        writer = csv.writer ( csvfile )
+        writer.writerow ( [f"{title} Combined {stat_name} Summary Statistics"] )
+        if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
+            writer.writerow (
+                ['Configuration', 'Mean (ns)', 'Median (ns)', 'Minimum (ns)',
+                 'Maximum (ns)', 'Standard Deviation'] )
+        else:
+            writer.writerow (
+                ['Configuration', 'Mean (B)', 'Median (B)', 'Minimum (B)',
+                 'Maximum (B)', 'Standard Deviation'] )
+
+        for metric_name, stats in data_dict.items ():
+            name = metric_name
+
+            if isinstance ( stats, dict ):
+                writer.writerow ( [name] +
+                                  [stats.get ( stat, '' ) for stat in
+                                   ['Mean', 'Median', 'Minimum', 'Maximum', 'Standard Deviation']] )

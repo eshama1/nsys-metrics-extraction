@@ -95,15 +95,16 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
 
     if not raw_provided:
         for name, sub_dict in combined_data.items ():
-            if sub_dict[metric]["Raw Data"] and metric == 'Bandwidth Distribution':
-                labels.append ( name )
-                temp = []
-                for transfer_size, bandwidth in sub_dict[metric]["Raw Data"]:
-                    temp.append ( bandwidth )
-                data.append ( temp )
-            elif sub_dict[metric]["Raw Data"]:
-                labels.append ( name )
-                data.append ( sub_dict[metric]["Raw Data"] )
+            if sub_dict[metric]:
+                if sub_dict[metric]["Raw Data"] and metric == 'Bandwidth Distribution':
+                    labels.append ( name )
+                    temp = []
+                    for transfer_size, bandwidth in sub_dict[metric]["Raw Data"]:
+                        temp.append ( bandwidth )
+                    data.append ( temp )
+                elif sub_dict[metric]["Raw Data"]:
+                    labels.append ( name )
+                    data.append ( sub_dict[metric]["Raw Data"] )
     else:
         for name, sub_list in combined_data.items ():
             labels.append ( name )

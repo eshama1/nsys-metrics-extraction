@@ -9,6 +9,13 @@ from absl import logging, app
 
 MAX_WORKERS = 12
 
+QUERY_TOTAL_DURATION = """
+SELECT duration AS total_duration
+FROM ANALYSIS_DETAILS;
+"""
+
+DURATION_REQUIRED_TABLE = ['ANALYSIS_DETAILS']
+
 def file_args_checking(args):
     extract_data = False
     output_data = True

@@ -130,7 +130,7 @@ def export_overall_summary_stat_to_latex(data_dict, parent_dir):
         latexfile.write ( "\\caption{Overall Application Duration Summary}\n" )
         latexfile.write ( "\\begin{tabular}{|c|c|c|c|}\n" )
         latexfile.write ( "\\hline\n" )
-        latexfile.write ("\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} \\\\\n")
+        latexfile.write ("\\textbf{Name} & \\textbf{Total Relative Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} \\\\\n")
         latexfile.write ( "\\hline\n" )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
@@ -151,7 +151,7 @@ def export_summary_summary_stat_to_CSV(data_dict, parent_dir):
     with open ( csv_filename, 'w', newline='' ) as csvfile:
         writer = csv.writer ( csvfile )
         writer.writerow ( [f"Overall Application Duration Summary"] )
-        writer.writerow ( ['Name', 'Total Time (%)', 'Total Time (ns)', 'Instances'] )
+        writer.writerow ( ['Name', 'Total Relative Time (%)', 'Total Time (ns)', 'Instances'] )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
                 time_duration = stats['Time Total']

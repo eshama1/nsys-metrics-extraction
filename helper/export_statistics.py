@@ -129,21 +129,15 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
 
 
 def find_common_keys_or_names(data_dict, kernels=False):
-    # Collect kernel names/keys for each configuration
     kernel_sets = []
     for config, subdict in data_dict.items():
         if kernels:
-            # Get kernel names
             items = {value.get("Name") for value in subdict.values()}
         else:
-            # Get kernel keys
             items = set(subdict.keys())
         kernel_sets.append((config, items))
 
-    # Find common kernels
     common_kernels = set.intersection(*[ks for _, ks in kernel_sets])
-
-    # Filter configurations based on common kernels
     common_items = []
     for i in range ( len ( kernel_sets ) ):
         for j in range ( i + 1, len ( kernel_sets ) ):
@@ -212,14 +206,15 @@ def export_overall_summary_tables(data_dict, parent_dir):
     total_time = 0
 
     for stats_names, sub_dict in data_dict.items ():
-        summary_stats[stats_names] = {'Time Total': 0, 'Instance': 0}
-        for metric, stats in sub_dict.items ():
-            if 'Individual' in metric:
-                for sub_metric, sub_stats in stats.items ():
-                    if sub_stats['Time Total'] and sub_stats['Instance']:
-                        summary_stats[stats_names]['Time Total'] += sub_stats['Time Total']
-                        summary_stats[stats_names]['Instance'] += sub_stats['Instance']
-                        total_time += sub_stats['Time Total']
+        if isinstance(sub_dict, dict):
+            summary_stats[stats_names] = {'Time Total': 0, 'Instance': 0}
+            for metric, stats in sub_dict.items ():
+                if 'Individual' in metric:
+                    for sub_metric, sub_stats in stats.items ():
+                        if sub_stats['Time Total'] and sub_stats['Instance']:
+                            summary_stats[stats_names]['Time Total'] += sub_stats['Time Total']
+                            summary_stats[stats_names]['Instance'] += sub_stats['Instance']
+                            total_time += sub_stats['Time Total']
 
     summary_stats['Time Total'] = total_time
     export_overall_summary_stat_to_latex ( summary_stats, parent_dir )
@@ -230,17 +225,19 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
 
     if not combined:
         for sub_dir, sub_dict in data_dict.items ():
-            temp_parent_dir = parent_dir + '/' + sub_dir
-            os.makedirs ( temp_parent_dir, exist_ok=True )
-            generate_general_tables_and_figures ( sub_dict, temp_parent_dir, no_specific, no_individual )
+            if isinstance(sub_dict,dict):
+                temp_parent_dir = parent_dir + '/' + sub_dir
+                os.makedirs ( temp_parent_dir, exist_ok=True )
+                generate_general_tables_and_figures ( sub_dict, temp_parent_dir, no_specific, no_individual )
     else:
         configs = list(data_dict.keys ())
         stats = list(data_dict[configs[0]].keys())
         for stat in stats:
-            temp_dict = {config: data_dict[config][stat] for config in configs}
-            temp_parent_dir = parent_dir + '/' + stat
-            os.makedirs ( temp_parent_dir, exist_ok=True )
-            generate_general_tables_and_figures ( temp_dict, temp_parent_dir, combined=True)
+            if 'Total Duration' != stat:
+                temp_dict = {config: data_dict[config][stat] for config in configs}
+                temp_parent_dir = parent_dir + '/' + stat
+                os.makedirs ( temp_parent_dir, exist_ok=True )
+                generate_general_tables_and_figures ( temp_dict, temp_parent_dir, combined=True)
 
     if not no_general and not combined:
         logging.info ( f"Starting Overall Summary Figure and Table Generation" )

@@ -210,11 +210,13 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
         sizes, bandwidths = zip(*sub_list)
         all_sizes.extend(sizes)
 
-    quantiles = np.linspace ( 0, 1, 8 )
-    bin_edges = np.quantile ( all_sizes, quantiles )
-    fig, ax = plt.subplots(1, figsize=(10, 10))
+    quantiles = np.linspace(0, 1, 8)
+    bin_edges = np.quantile(all_sizes, quantiles)
+    fig, ax = plt.subplots(figsize=(10, 10))
     num_configs = len(combined_data.items())
-    width_per_bin = 0.7 / num_configs
+    width_per_bin = 0.25  # adjusted width for violins
+
+    x = np.arange(len(bin_edges) - 1)  # the label locations
 
     for i, (name, bandwidths) in enumerate(combined_data.items()):
         binned_bandwidths = [[] for _ in range(len(bin_edges) - 1)]
@@ -228,9 +230,9 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
                     item.append(0)
 
             offset = (num_configs - 1) / 2
-            positions = np.arange ( len ( binned_bandwidths ) ) - offset + i * width_per_bin
-            parts = ax.violinplot ( binned_bandwidths, showmeans=True, showmedians=True,
-                                    positions=positions, widths=width_per_bin )
+            positions = x + offset + i * width_per_bin
+            parts = ax.violinplot(binned_bandwidths, showmeans=True, showmedians=True,
+                                  positions=positions, widths=width_per_bin)
 
             for pc in parts['bodies']:
                 pc.set_facecolor('C' + str(i))
@@ -249,14 +251,14 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.set_title(f'{title} Bandwidth Distribution by Transfer Size')
-    ax.set_xticks(np.arange(len(bin_edges) - 1))
+    ax.set_xticks(x + 0.5 * (num_configs - 1))
     bin_labels = [f'{convert_size(right)}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
     ax.set_xticklabels(bin_labels, rotation=45, ha='right')  # Adjust rotation and alignment for readability
     ax.set_xlabel("Data Transfer Size")
     ax.set_yscale('log')
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
     ax.set_ylabel("Bandwidth (B/s)")
-    ax.legend()
+    ax.legend(loc='upper right')  # Adjust legend position
     fig.tight_layout()
     fig.subplots_adjust(top=0.9, bottom=0.15)  # Adjust top and bottom margins
     file = parent_dir + '/' + title.replace(' ', '_') + '_Combined_Bandwidth_distribution_By_Size.png'

@@ -137,6 +137,9 @@ def create_statistics_from_file(database_file, output_dir):
             full_statistics['Communication Statistics'] = {'Individual Communications': comm_statistics}
             full_statistics['Communication Statistics'].update(create_specific_communication_stats(comm_statistics))
 
+    if mutiple_table_exists(database_file, DURATION_REQUIRED_TABLE):
+        full_statistics['Total Duration'] = execute_query_in_thread((QUERY_TOTAL_DURATION, None), database_file)[1][0][0]
+
     if not FLAGS.no_save_data and full_statistics:
         database_file_JSON = output_dir + database_file.split('.')[0] + '_parsed_stats.json'
         logging.info(f"Saving Extracted Statistics of {database_file} to {database_file_JSON}")
@@ -158,7 +161,7 @@ def run(args):
             temp.append(dir)
         output_dir = temp
     else:
-        output_dir = f"./output/{files}"
+        output_dir = f"./output/{files}/"
         os.makedirs(output_dir, exist_ok=True)
 
     extracted_data = {}

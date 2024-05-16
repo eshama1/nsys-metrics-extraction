@@ -236,18 +236,18 @@ def expand_bins(data, bin_edges):
     return bin_edges
 
 
-def create_histogram(data, bins=10, powers=False, base=False, convert_bytes=False, return_bins=False):
+def create_histogram(data, bins=10, powers_2=False, base=False, convert_bytes=False, return_bins=False):
     if len(data) > 1:
         data.sort()
         if base:
             bin_edges = np.histogram_bin_edges(data, bins=bins)
-            if powers:
+            if powers_2:
                 bin_edges = 2 ** np.round(np.log2(bin_edges))
                 bin_edges = np.unique(bin_edges)
         else:
             quantiles = np.linspace(0, 1, bins + 1)
             bin_edges = np.quantile(data, quantiles)
-            if powers:
+            if powers_2:
                 bin_edges = 2 ** np.round(np.log2(bin_edges))
                 bin_edges = np.unique(bin_edges)
                 if 1 < len(bin_edges) < bins / 2 < len(set(data)):

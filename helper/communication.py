@@ -147,8 +147,8 @@ def generate_communicaiton_stats(comm):
 
     if durations and label:
         dict[label] = generate_statistics(durations, 'Execution Duration')
-        histogram_data = create_histogram(durations, bins=10, powers=False, base=False,
-                                          convert_bytes=False, return_bins=False)
+        histogram_data = create_histogram( durations, bins=10, powers_2=False, base=False,
+                                           convert_bytes=False, return_bins=False )
         dict[label]['Execution Duration']['Distribution'] = histogram_data
     else:
         dict[label] = None

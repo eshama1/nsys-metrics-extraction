@@ -122,7 +122,7 @@ def generate_transfer_stats(transfers):
 
     if transfer_sizes:
         transfer_data.update ( generate_statistics ( transfer_sizes, "Transfer Size" ) )
-        histogram_data, returned_hist_data = create_histogram ( transfer_sizes, bins=10, powers=True, base=False,
+        histogram_data, returned_hist_data = create_histogram ( transfer_sizes, bins=10, powers_2=True, base=False,
                                                                 convert_bytes=True, return_bins=True )
         if returned_hist_data:
             histgram_bins, histogram_dict = returned_hist_data
@@ -132,7 +132,7 @@ def generate_transfer_stats(transfers):
 
     if transfer_durations:
         transfer_data.update ( generate_statistics ( transfer_durations, "Transfer Durations" ) )
-        histogram_data = create_histogram ( transfer_durations, bins=10, powers=False, base=False, convert_bytes=False )
+        histogram_data = create_histogram ( transfer_durations, bins=10, powers_2=False, base=False, convert_bytes=False )
         transfer_data['Transfer Durations']['Distribution'] = histogram_data
     else:
         transfer_data['Transfer Durations'] = None

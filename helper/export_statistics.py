@@ -5,7 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from absl import logging
 
 from helper.figures import create_and_plot_k_mean_statistics, plot_bandwidth_distribution, plot_frequency_distribution, \
-    plot_combined_data, plot_combined_overall_bandwidth_distribution, plot_binned_bandwidth_distribution
+    plot_combined_data, plot_combined_overall_bandwidth_distribution, plot_binned_bandwidth_distribution, \
+    plot_combined_frequency_distribution
 from helper.general import MAX_WORKERS
 from helper.tables import export_single_general_stat_to_latex, export_single_general_stat_to_CSV, \
     export_summary_stat_to_latex, export_summary_stat_to_CSV, export_overall_summary_stat_to_latex, \
@@ -112,6 +113,7 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
                 item_dicts[label] = data_dict[label][metric]
 
             plot_combined_data ( raw_individual_data, name, metric, parent_dir, raw_provided=True)
+            plot_combined_frequency_distribution( raw_individual_data, name, metric, parent_dir)
             export_combined_overall_summary_stat_to_CSV ( item_dicts, parent_dir, name, metric )
             export_combined_overall_summary_stat_to_latex ( item_dicts, parent_dir, name, metric )
 
@@ -148,6 +150,7 @@ def find_common_keys_or_names(data_dict, kernels=False):
                     common_items.append ( (kernel_name, *common_configs) )
 
     return common_items
+
 
 def generate_specific_tables_and_figures(data_dict, parent_dir, combined=False):
     logging.info ( f"Starting Individual kernel/type Summary Figure and Table Generation" )
@@ -259,7 +262,7 @@ def generation_tables_and_figures(data_dict, no_comparison, no_general, no_speci
             os.makedirs ( temp_parent_dir, exist_ok=True )
             extract_general_dict ( sub_dict, temp_parent_dir, no_general, no_specific, no_individual )
 
-    if not no_comparison and  num_files > 1:
+    if not no_comparison and num_files > 1:
         logging.info ( f"Starting Comparison Figure and Table Generation" )
         temp_parent_dir = './output/Combined Statistics'
         os.makedirs ( temp_parent_dir, exist_ok=True )

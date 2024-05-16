@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt, ticker
 from matplotlib.ticker import ScalarFormatter
 from sklearn.cluster import KMeans
 
-from helper.general import convert_size
+from helper.general import convert_size, convert_duration
 
 
 def format_power_2_ticks(value, _):
@@ -252,7 +252,8 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.set_title(f'{title} Bandwidth Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
-    bin_labels = [f'{convert_size(right)}' for left, right in zip(bin_edges[:-1], bin_edges[1:])]
+    bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
+                  zip ( bin_edges[:-1], bin_edges[1:] )]
     ax.set_xticklabels(bin_labels, rotation=45, ha='right')  # Adjust rotation and alignment for readability
     ax.set_xlabel("Data Transfer Size")
     ax.set_yscale('log')
@@ -337,3 +338,56 @@ def plot_frequency_distribution(histogram_data, title, xlabel, parent_dir):
     fig.savefig ( file, bbox_inches='tight' )
     plt.close ( fig )
 
+
+def plot_combined_frequency_distribution(combined_data, title, metric, parent_dir):
+    all_values = []
+    for name, sub_list in combined_data.items():
+        all_values.extend(sub_list)
+
+    quantiles = np.linspace(0, 1, num=9)
+    bin_edges = np.quantile(all_values, quantiles)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    num_configs = len(combined_data.items())
+    width_per_bin = 0.25
+
+    x = np.arange(len(bin_edges) - 1)
+
+    for i, (name, data) in enumerate(combined_data.items()):
+        binned_data = [[] for _ in range(len(bin_edges) - 1)]
+        for j in range(len(bin_edges) - 1):
+            bin_data = [val for val in data if bin_edges[j] <= val < bin_edges[j + 1]]
+            if bin_data:
+                binned_data[j] = bin_data
+        if binned_data:
+            for item in binned_data:
+                if len(item) == 0:
+                    item.append(0)
+
+            offset = (num_configs - 1) / 2
+            positions = x + offset + i * width_per_bin
+            ax.bar(positions, [np.mean(b) for b in binned_data], width_per_bin, alpha=0.7, label=name)
+
+    ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+    ax.set_title(f'{title} {metric} Distribution by Transfer Size')
+    ax.set_xticks(x + 0.5 * (num_configs - 1))
+
+    if 'Size' in metric:
+        ax.set_xlabel("Size (B)")
+        bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
+                      zip ( bin_edges[:-1], bin_edges[1:] )]
+    else:
+        ax.set_xlabel("Time (ns)")
+        bin_labels = [f'{convert_duration ( left )} to {convert_duration ( right )}' for left, right in
+                      zip ( bin_edges[:-1], bin_edges[1:] )]
+
+
+    ax.set_xticklabels ( bin_labels, rotation=45, ha='right' )
+    ax.set_ylabel("Frequency")
+    ax.set_yscale('log', base=10)
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
+    ax.legend(loc='upper right')
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9, bottom=0.15)
+    file = os.path.join(parent_dir, title.replace(' ', '_') + '_Combined_' + metric.replace(' ', '_') + '_distribution_By_Size.png')
+    fig.savefig(file, bbox_inches='tight')
+    plt.close(fig)

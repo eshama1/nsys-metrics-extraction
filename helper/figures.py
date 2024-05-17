@@ -149,7 +149,7 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
     else:
         ax.set_ylabel ( "Time (ns)" )
 
-    ax.set_title ( f"{title} Combined {metric}" )
+    ax.set_title ( f"{title}: Combined {metric}" )
 
     fig.tight_layout ()
     fig.subplots_adjust ( top=0.95 )
@@ -184,7 +184,7 @@ def plot_combined_overall_bandwidth_distribution(combined_data, title, parent_di
 
     min_value = min ( min ( sublist ) for sublist in data )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
-    ax.set_title ( f'{title} Overall Combined Bandwidth Distribution' )
+    ax.set_title ( f'{title}: Overall Combined Bandwidth Distribution' )
     ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
     ax.xaxis.set_ticklabels ( labels )
     ax.tick_params ( axis='x', rotation=45 )
@@ -250,7 +250,7 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
         ax.plot([], [], color='C' + str(i), label=name)
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
-    ax.set_title(f'{title} Bandwidth Distribution by Transfer Size')
+    ax.set_title(f'{title}: Bandwidth Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
     bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
                   zip ( bin_edges[:-1], bin_edges[1:] )]
@@ -368,7 +368,7 @@ def plot_combined_frequency_distribution(combined_data, title, metric, parent_di
             ax.bar(positions, [np.mean(b) for b in binned_data], width_per_bin, alpha=0.7, label=name)
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
-    ax.set_title(f'{title} {metric} Distribution by Transfer Size')
+    ax.set_title(f'{title}: {metric} Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
 
     if 'Size' in metric:

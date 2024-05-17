@@ -161,7 +161,7 @@ def run(args):
             temp.append(dir)
         output_dir = temp
     else:
-        output_dir = f"./output/{files}/"
+        output_dir = f"./output/" + files.split(".")[0] + "/"
         os.makedirs(output_dir, exist_ok=True)
 
     extracted_data = {}

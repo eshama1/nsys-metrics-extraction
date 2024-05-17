@@ -106,6 +106,7 @@ WHERE
 
 TRANSFER_REQUIRED_TABLES = ['CUPTI_ACTIVITY_KIND_MEMCPY', 'CUPTI_ACTIVITY_KIND_MEMSET']
 
+CONVERSION_TO_SECONDS = 1e-6 #Nsight claims ns for duration but found to be us
 
 def generate_transfer_stats(transfers):
     transfer_sizes = []
@@ -116,7 +117,7 @@ def generate_transfer_stats(transfers):
     for _, size, duration in transfers[1]:
         transfer_sizes.append ( size )
         transfer_durations.append ( duration )
-        temp_bandwidth.append ( (size, size / (duration * 1e-9))) # convert from B/ns to B/s
+        temp_bandwidth.append ( (size, size / (duration * CONVERSION_TO_SECONDS))) # convert to B/s
 
     transfer_data = {}
 

@@ -48,6 +48,7 @@ python3 main.py -jf "file1.json file2.json file3.json" -mdl "Label1,Label2,Label
 
 ### General Flags
 - **multi_data_label** (`--mdl`): *(REQUIRED for multi-files)* Labels for each database/JSON file provided to distinguish in statistics. Example: (1 GPU, 2 GPU, 3 GPU). Use commas to split names, and ensure the order matches the provided files.
+- **max_workers** (`--mw`): Specifies the number of threads to split work (Defaults to CPU count if not set).
 
 ### Extraction Flags
 - **data_file** (`--df`): Specifies the database file for extraction (sqlite).
@@ -63,4 +64,3 @@ python3 main.py -jf "file1.json file2.json file3.json" -mdl "Label1,Label2,Label
 - **no_general_metrics_output** (`--ngmo`): If set, disables general metrics export (Kernel, Transfer, Communication).
 - **no_specific_metrics_output** (`--nsmo`): If set, disables specific metrics export (Duration, Size, Slack, Overhead, etc).
 - **no_individual_metrics_output** (`--nimo`): If set, disables individual metrics export (individual kernel, transfer, communication statistics).
-- **max_workers** (`--mw`): Specifies the number of threads to split work (Defaults to CPU count if not set).

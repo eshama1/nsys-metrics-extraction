@@ -147,7 +147,7 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
     elif metric == 'Bandwidth Distribution':
         ax.set_ylabel ( "Bandwidth (B/s)" )
     else:
-        ax.set_ylabel ( "Time (ns)" )
+        ax.set_ylabel ( "Time (us)" )
 
     ax.set_title ( f"{title}: Combined {metric}" )
 
@@ -376,7 +376,7 @@ def plot_combined_frequency_distribution(combined_data, title, metric, parent_di
         bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
                       zip ( bin_edges[:-1], bin_edges[1:] )]
     else:
-        ax.set_xlabel("Time (ns)")
+        ax.set_xlabel("Time (us)")
         bin_labels = [f'{convert_duration ( left )} to {convert_duration ( right )}' for left, right in
                       zip ( bin_edges[:-1], bin_edges[1:] )]
 

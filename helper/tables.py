@@ -23,7 +23,7 @@ def export_single_general_stat_to_latex(data_dict, parent_dir, title):
         for metric, stats in data_dict.items ():
             if isinstance ( stats, dict ) and 'Individual' not in metric and 'Bandwidth Distribution' not in metric:
                 if 'Duration' in metric or 'Slack' in metric or 'Overhead' in metric:
-                    units = ' (ns)'
+                    units = ' (us)'
                 else:
                     units = ' (B)'
 
@@ -51,7 +51,7 @@ def export_single_general_stat_to_CSV(data_dict, parent_dir, title):
             if isinstance ( stats,
                             dict ) and 'Individual' not in metric_name and 'Bandwidth Distribution' not in metric_name:
                 if 'Duration' in metric_name or 'Slack' in metric_name or 'Overhead' in metric_name:
-                    units = ' (ns)'
+                    units = ' (us)'
                 else:
                     units = ' (B)'
                 writer.writerow ( [metric_name + units] + [stats.get ( stat, '' ) for stat in
@@ -65,9 +65,9 @@ def export_summary_stat_to_latex(data_dict, parent_dir, title, stat_name):
     safe_title = latex_safe_string ( title )
 
     if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
-        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} & \\textbf{Mean (ns)} & \\textbf{Median (ns)} & \\textbf{Minimum (ns)} & \\textbf{Maximum (ns)} & \\textbf{Standard Deviation} \\\\\n"
+        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} & \\textbf{Mean (us)} & \\textbf{Median (us)} & \\textbf{Minimum (us)} & \\textbf{Maximum (us)} & \\textbf{Standard Deviation} \\\\\n"
     else:
-        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} & \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
+        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} & \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
 
     with open ( latex_filename, 'w' ) as latexfile:
         latexfile.write ( "\\begin{table}[ht]\n" )
@@ -104,9 +104,9 @@ def export_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name):
         writer = csv.writer ( csvfile )
         writer.writerow ( [f"{title} Summary {stat_name} Statistics"] )
         if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
-            writer.writerow ( ['Name', 'Total Time (%)', 'Total Time (ns)', 'Instances', 'Mean (ns)', 'Median (ns)', 'Minimum (ns)', 'Maximum (ns)', 'Standard Deviation'] )
+            writer.writerow ( ['Name', 'Total Time (%)', 'Total Time (us)', 'Instances', 'Mean (us)', 'Median (us)', 'Minimum (us)', 'Maximum (us)', 'Standard Deviation'] )
         else:
-            writer.writerow ( ['Name', 'Total Time (%)', 'Total Time (ns)', 'Instances', 'Mean (B)', 'Median (B)', 'Minimum (B)', 'Maximum (B)', 'Standard Deviation'] )
+            writer.writerow ( ['Name', 'Total Time (%)', 'Total Time (us)', 'Instances', 'Mean (B)', 'Median (B)', 'Minimum (B)', 'Maximum (B)', 'Standard Deviation'] )
 
         for metric_name, stats in data_dict.items ():
             name = stats['Name'] if "Kernel" in title else metric_name
@@ -130,7 +130,7 @@ def export_overall_summary_stat_to_latex(data_dict, parent_dir):
         latexfile.write ( "\\caption{Overall Application Duration Summary}\n" )
         latexfile.write ( "\\begin{tabular}{|c|c|c|c|}\n" )
         latexfile.write ( "\\hline\n" )
-        latexfile.write ("\\textbf{Name} & \\textbf{Total Relative Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} \\\\\n")
+        latexfile.write ("\\textbf{Name} & \\textbf{Total Relative Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} \\\\\n")
         latexfile.write ( "\\hline\n" )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
@@ -151,7 +151,7 @@ def export_summary_summary_stat_to_CSV(data_dict, parent_dir):
     with open ( csv_filename, 'w', newline='' ) as csvfile:
         writer = csv.writer ( csvfile )
         writer.writerow ( [f"Overall Application Duration Summary"] )
-        writer.writerow ( ['Name', 'Total Relative Time (%)', 'Total Time (ns)', 'Instances'] )
+        writer.writerow ( ['Name', 'Total Relative Time (%)', 'Total Time (us)', 'Instances'] )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
                 time_duration = stats['Time Total']
@@ -166,9 +166,9 @@ def export_combined_summary_stat_to_latex(data_dict, parent_dir, title, stat_nam
     safe_title = latex_safe_string ( title )
 
     if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
-        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} & \\textbf{Mean (ns)} & \\textbf{Median (ns)} & \\textbf{Minimum (ns)} & \\textbf{Maximum (ns)} & \\textbf{Standard Deviation} \\\\\n"
+        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} & \\textbf{Mean (us)} & \\textbf{Median (us)} & \\textbf{Minimum (us)} & \\textbf{Maximum (us)} & \\textbf{Standard Deviation} \\\\\n"
     else:
-        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (ns)} & \\textbf{Instances} & \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
+        header = "\\textbf{Name} & \\textbf{Total Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} & \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
 
     with open ( latex_filename, 'w' ) as latexfile:
         latexfile.write ( "\\begin{table}[ht]\n" )
@@ -207,11 +207,11 @@ def export_combined_summary_stat_to_CSV(data_dict, parent_dir, title, stat_name)
         writer.writerow ( [f"{title} Combined {stat_name} Summary Statistics"] )
         if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
             writer.writerow (
-                ['Configuration', 'Total Time (%)', 'Total Time (ns)', 'Instances', 'Mean (ns)', 'Median (ns)', 'Minimum (ns)',
-                 'Maximum (ns)', 'Standard Deviation'] )
+                ['Configuration', 'Total Time (%)', 'Total Time (us)', 'Instances', 'Mean (us)', 'Median (us)', 'Minimum (us)',
+                 'Maximum (us)', 'Standard Deviation'] )
         else:
             writer.writerow (
-                ['Configuration', 'Total Time (%)', 'Total Time (ns)', 'Instances', 'Mean (B)', 'Median (B)', 'Minimum (B)',
+                ['Configuration', 'Total Time (%)', 'Total Time (us)', 'Instances', 'Mean (B)', 'Median (B)', 'Minimum (B)',
                  'Maximum (B)', 'Standard Deviation'] )
 
         for metric_name, stats in data_dict.items ():
@@ -233,7 +233,7 @@ def export_combined_overall_summary_stat_to_latex(data_dict, parent_dir, title, 
     safe_title = latex_safe_string ( title )
 
     if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
-        header = "\\textbf{Name} & \\textbf{Mean (ns)} & \\textbf{Median (ns)} & \\textbf{Minimum (ns)} & \\textbf{Maximum (ns)} & \\textbf{Standard Deviation} \\\\\n"
+        header = "\\textbf{Name} & \\textbf{Mean (us)} & \\textbf{Median (us)} & \\textbf{Minimum (us)} & \\textbf{Maximum (us)} & \\textbf{Standard Deviation} \\\\\n"
     else:
         header = "\\textbf{Name} &  \\textbf{Mean (B)} & \\textbf{Median (B)} & \\textbf{Minimum (B)} & \\textbf{Maximum (B)} & \\textbf{Standard Deviation} \\\\\n"
 
@@ -271,8 +271,8 @@ def export_combined_overall_summary_stat_to_CSV(data_dict, parent_dir, title, st
         writer.writerow ( [f"{title} Combined {stat_name} Summary Statistics"] )
         if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
             writer.writerow (
-                ['Configuration', 'Mean (ns)', 'Median (ns)', 'Minimum (ns)',
-                 'Maximum (ns)', 'Standard Deviation'] )
+                ['Configuration', 'Mean (us)', 'Median (us)', 'Minimum (us)',
+                 'Maximum (us)', 'Standard Deviation'] )
         else:
             writer.writerow (
                 ['Configuration', 'Mean (B)', 'Median (B)', 'Minimum (B)',

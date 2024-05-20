@@ -164,8 +164,11 @@ def plot_combined_overall_bandwidth_distribution(combined_data, title, parent_di
     labels = []
 
     for name, sub_list in combined_data.items ():
-        labels.append ( name )
-        data.append ( sub_list[1] )
+        labels.append(name)
+        temp = []
+        for _, bandwidth in sub_list:
+            temp.append (bandwidth)
+        data.append ( temp )
 
     fig, ax = plt.subplots ( 1, figsize=(10, 10) )
     parts = ax.violinplot ( data, showmeans=True, showmedians=True )

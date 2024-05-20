@@ -141,6 +141,7 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
     if magnitude_diff >= 1:
         ax.set_yscale ( 'log', base=10 )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     if 'Size' in metric:
         ax.set_ylabel ( "Size (B)" )
@@ -184,6 +185,7 @@ def plot_combined_overall_bandwidth_distribution(combined_data, title, parent_di
 
     min_value = min ( min ( sublist ) for sublist in data )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.set_title ( f'{title}: Overall Combined Bandwidth Distribution' )
     ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
     ax.xaxis.set_ticklabels ( labels )
@@ -250,6 +252,7 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
         ax.plot([], [], color='C' + str(i), label=name)
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.set_title(f'{title}: Bandwidth Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
     bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
@@ -293,6 +296,7 @@ def plot_bandwidth_distribution(histogram_data, title, parent_dir):
     ax.tick_params ( axis='x', rotation=45 )
     min_value = min ( min ( sublist ) for sublist in array_lists )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.set_title ( title )
     ax.set_xlabel ( "Transfer size range" )
     ax.set_yscale ( 'log', base=10 )
@@ -322,6 +326,7 @@ def plot_frequency_distribution(histogram_data, title, xlabel, parent_dir):
     ax.xaxis.set_ticklabels ( labels )
     ax.tick_params ( axis='x', rotation=45 )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.set_title ( title )
     ax.set_xlabel ( xlabel )
     ax.set_ylabel ( "Frequency" )
@@ -368,6 +373,7 @@ def plot_combined_frequency_distribution(combined_data, title, metric, parent_di
             ax.bar(positions, [np.mean(b) for b in binned_data], width_per_bin, alpha=0.7, label=name)
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
+    ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
     ax.set_title(f'{title}: {metric} Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
 

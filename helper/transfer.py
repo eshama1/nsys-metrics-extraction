@@ -114,7 +114,7 @@ def generate_transfer_stats(transfers):
     temp_bandwidth = []
     histgram_bins = []
 
-    for _, size, duration in transfers[1]:
+    for _, duration, size in transfers[1]:
         transfer_sizes.append ( size )
         transfer_durations.append ( duration )
         temp_bandwidth.append ( (size, size / (duration * CONVERSION_TO_SECONDS))) # convert to B/s

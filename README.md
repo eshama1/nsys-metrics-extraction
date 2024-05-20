@@ -47,20 +47,20 @@ python3 main.py -jf "file1.json file2.json file3.json" -mdl "Label1,Label2,Label
 ## Flags Overview
 
 ### General Flags
-- **multi_data_label** (`--mdl`): *(REQUIRED for multi-files)* Labels for each database/JSON file provided to distinguish in statistics. Example: (1 GPU, 2 GPU, 3 GPU). Use commas to split names, and ensure the order matches the provided files.
-- **max_workers** (`--mw`): Specifies the number of threads to split work (Defaults to CPU count if not set).
+- **multi_data_label** (`-mdl`): *(REQUIRED for multi-files)* Labels for each database/JSON file provided to distinguish in statistics. Example: (1 GPU, 2 GPU, 3 GPU). Use commas to split names, and ensure the order matches the provided files.
+- **max_workers** (`-mw`): Specifies the number of threads to split work (Defaults to CPU count if not set).
 
 ### Extraction Flags
-- **data_file** (`--df`): Specifies the database file for extraction (sqlite).
-- **json_file** (`--jf`): Specifies the JSON file containing extracted statistics.
-- **no_kernel_metrics** (`--nkm`): If set, kernel metrics will not be exported.
-- **no_transfer_metrics** (`--ntm`): If set, transfer metrics will not be exported.
-- **no_communication_metrics** (`--ncm`): If set, communication metrics will not be exported.
-- **no_save_data** (`--nsd`): If set, metrics will not be saved to a *NAV json* file.
+- **data_file** (`-df`): Specifies the database file for extraction (sqlite).
+- **json_file** (`-jf`): Specifies the JSON file containing extracted statistics.
+- **no_kernel_metrics** (`-nkm`): If set, kernel metrics will not be exported.
+- **no_transfer_metrics** (`-ntm`): If set, transfer metrics will not be exported.
+- **no_communication_metrics** (`-ncm`): If set, communication metrics will not be exported.
+- **no_save_data** (`-nsd`): If set, metrics will not be saved to a *NAV json* file.
 
 ### Graphics and Table Flags
-- **no_metrics_output** (`--nmo`): If set, disables metrics export after extraction.
-- **no_compare_metrics_output** (`--ncmo`): If set, disables comparison metrics export (applicable for multi-file only).
-- **no_general_metrics_output** (`--ngmo`): If set, disables general metrics export (Kernel, Transfer, Communication).
-- **no_specific_metrics_output** (`--nsmo`): If set, disables specific metrics export (Duration, Size, Slack, Overhead, etc).
-- **no_individual_metrics_output** (`--nimo`): If set, disables individual metrics export (individual kernel, transfer, communication statistics).
+- **no_metrics_output** (`-nmo`): If set, disables metrics export after extraction.
+- **no_compare_metrics_output** (`-ncmo`): If set, disables comparison metrics export (applicable for multi-file only).
+- **no_general_metrics_output** (`-ngmo`): If set, disables general metrics export (Kernel, Transfer, Communication).
+- **no_specific_metrics_output** (`-nsmo`): If set, disables specific metrics export (Duration, Size, Slack, Overhead, etc).
+- **no_individual_metrics_output** (`-nimo`): If set, disables individual metrics export (individual kernel, transfer, communication statistics).

@@ -13,6 +13,12 @@ Extracting *sqlite* file from *nsys-rep* file. Alternative: If you open the nsys
 nsys export --type sqlite <nsys.rep file>
 ```
 
+### Required Python Library's 
+Please ensure that local python ENV has all the required library's 
+```python
+pip install absl_py contourpy cycler fonttools joblib kiwisolver matplotlib numpy packaging pillow pyparsing python_dateutil scikit_learn scipy six sklearn threadpoolctl
+```
+
 ### Generating *NAV* *json* file
 Extracting data from *.sqlite* and create tables and figures
 ```python

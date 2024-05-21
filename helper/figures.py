@@ -260,12 +260,12 @@ def plot_binned_bandwidth_distribution(combined_data, title, parent_dir):
     ax.set_xticks(x + 0.5 * (num_configs - 1))
     bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
                   zip ( bin_edges[:-1], bin_edges[1:] )]
-    ax.set_xticklabels(bin_labels, rotation=45, ha='right')  # Adjust rotation and alignment for readability
+    ax.set_xticklabels(bin_labels, rotation=45, ha='right')
     ax.set_xlabel("Data Transfer Size")
     ax.set_yscale('log')
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
     ax.set_ylabel("Bandwidth (B/s)")
-    ax.legend(loc='upper right')  # Adjust legend position
+    ax.legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.9, bottom=0.15)  # Adjust top and bottom margins
     file = parent_dir + '/' + title.replace(' ', '_') + '_Combined_Bandwidth_distribution_By_Size.png'
@@ -394,7 +394,7 @@ def plot_combined_frequency_distribution(combined_data, title, metric, parent_di
     ax.set_ylabel("Frequency")
     ax.set_yscale('log', base=10)
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
-    ax.legend(loc='upper right')
+    ax.legend()
     fig.tight_layout()
     fig.subplots_adjust(top=0.9, bottom=0.15)
     file = os.path.join(parent_dir, title.replace(' ', '_') + '_Combined_' + metric.replace(' ', '_') + '_distribution_By_Size.png')

@@ -6,7 +6,12 @@ These scripts also have the ability to create comparative tables and figures whe
 NOTE these scripts extract the raw data from the *sqlite* files which means the duration of extraction is relative to the size and frequency of the metrics.
 For ~1GB files expect a few minutes, for ~100GB expect a few hours. 
 
-## Script Usage
+## Requirements
+
+### Required Trace Flags 
+ ```bash
+ nsys profile --trace=cuda,mpi,ucx,nvtx 
+ ```
 
 Extracting *sqlite* file from *nsys-rep* file. Alternative: If you open the nsys-rep file in NSight GUI it may generate *sqlite* file.
 ```bash
@@ -18,6 +23,8 @@ Please ensure that local python ENV has all the required library's
 ```python
 pip install absl_py contourpy cycler fonttools joblib kiwisolver matplotlib numpy packaging pillow pyparsing python_dateutil scikit_learn scipy six sklearn threadpoolctl
 ```
+
+## Script Usage
 
 ### Generating *NAV* *json* file
 Extracting data from *.sqlite* and create tables and figures

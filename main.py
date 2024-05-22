@@ -1,6 +1,5 @@
 import multiprocessing
 import time
-
 from absl import flags
 
 from helper.extraction import create_statistics_from_file
@@ -12,11 +11,11 @@ flags.DEFINE_string('multi_data_label', None, "(REQUIRED for multi-files) Labels
 
 # Extraction Flags
 flags.DEFINE_string('data_file', None, "Data Base file for extraction (sqlite)", short_name='df')
-flags.DEFINE_string('json_file', None, "JSON file with extracted statistics", short_name='jf')
+flags.DEFINE_string('nav_file', None, "NAV file with extracted statistics", short_name='nf')
 flags.DEFINE_boolean('no_kernel_metrics', False, "export kernel metrics", short_name='nkm')
 flags.DEFINE_boolean('no_transfer_metrics', False, "export transfer metrics", short_name='ntm')
 flags.DEFINE_boolean('no_communication_metrics', False, "export communication metrics", short_name='ncm')
-flags.DEFINE_boolean('no_save_data', False, "Save metrics to JSON file", short_name='nsd')
+flags.DEFINE_boolean('no_save_data', False, "Save metrics to NAV file", short_name='nsd')
 
 # Graphics and Table Flags
 flags.DEFINE_boolean('no_metrics_output', None, "disable metrics export after extraction", short_name='nmo')
@@ -54,9 +53,9 @@ def run(args):
     else:
         if num_files > 1:
             for i, file in enumerate(files):
-                extracted_data[file_labels[i]] = import_from_json(file)
+                extracted_data[file_labels[i]] = import_from_NAV(file)
         else:
-            extracted_data.update(import_from_json(files))
+            extracted_data.update(import_from_NAV(files))
 
     if output_data and extracted_data:
         no_compare = True if num_files < 2 and not args.no_compare_metrics_output else False

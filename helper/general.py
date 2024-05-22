@@ -1,5 +1,4 @@
 import json
-import os
 import sqlite3
 from bisect import bisect_left, bisect_right
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -21,20 +20,20 @@ def file_args_checking(args):
     output_data = True
     file_labels = None
 
-    if args.data_file != None and args.json_file == None:
+    if args.data_file != None and args.na_file == None:
         extract_data = True
 
     if extract_data:
         num_files = args.data_file.count(".sqlite")
     else:
-        num_files = args.json_file.count(".json")
+        num_files = args.nav_file.count(".nav")
 
     if num_files > 1:
 
         if extract_data:
             files = [f.strip () + ".sqlite" for f in args.data_file.split ( ".sqlite" )]
         else:
-            files = [f.strip () + ".json" for f in args.json_file.split ( ".json" )]
+            files = [f.strip () + ".nav" for f in args.nav_file.split ( ".nav" )]
 
         files = files[0:num_files]
 
@@ -46,7 +45,7 @@ def file_args_checking(args):
         if len(file_labels) != num_files:
             raise app.UsageError("Must provide labels for each provided files")
     else:
-        files = args.data_file if extract_data else args.json_file
+        files = args.data_file if extract_data else args.nav_file
 
     if args.no_metrics_output:
         output_data = not args.no_metrics_output
@@ -54,10 +53,9 @@ def file_args_checking(args):
     return files, num_files, file_labels, output_data, extract_data
 
 
-def import_from_json(file):
-    with open(file, 'r') as json_file:
-        # Load the JSON data into a dictionary
-        dict = json.load(json_file, parse_float=float)
+def import_from_NAV(file):
+    with open(file, 'r') as nav_file:
+        dict = json.load(nav_file, parse_float=float)
 
     return dict
 

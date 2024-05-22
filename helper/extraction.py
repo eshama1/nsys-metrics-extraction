@@ -118,9 +118,9 @@ def create_statistics_from_file(database_file, output_dir, FLAGS):
         full_statistics['Total Duration'] = execute_query_in_thread((QUERY_TOTAL_DURATION, None), database_file)[1][0][0]
 
     if not FLAGS.no_save_data and full_statistics:
-        database_file_JSON = output_dir + database_file.split('.')[0] + '_parsed_stats.json'
-        logging.info(f"Saving Extracted Statistics of {database_file} to {database_file_JSON}")
-        with open(database_file_JSON, 'w') as json_file:
-            json.dump(full_statistics, json_file, indent=4)
+        database_file_NAV = output_dir + database_file.split('.')[0] + '_parsed_stats.nav'
+        logging.info(f"Saving Extracted Statistics of {database_file} to {database_file_NAV}")
+        with open(database_file_NAV, 'w') as NAV_file:
+            json.dump(full_statistics, NAV_file, indent=4)
 
     return full_statistics

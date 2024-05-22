@@ -60,7 +60,7 @@ def create_and_plot_k_mean_statistics(cluster_data, title, parent_dir):
     fig.savefig ( file, bbox_inches='tight' )
     plt.close ( fig )
 
-    cluster_dir = parent_dir + '/cluster_options'
+    cluster_dir = parent_dir + '/Cluster Options'
     os.makedirs ( cluster_dir, exist_ok=True )
 
     for n_clusters in range ( 1, max_clusters + 1 ):

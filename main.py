@@ -1,3 +1,4 @@
+import os
 import multiprocessing
 import time
 from absl import flags
@@ -65,7 +66,7 @@ def run(args):
 def main(argv):
     args = FLAGS
     logging.set_verbosity(logging.INFO)
-    if not args.data_file and not args.json_file:
+    if not args.data_file and not args.nav_file:
         raise app.UsageError("Must provide path to data base file or already parsed json file")
 
     if not args.max_workers:

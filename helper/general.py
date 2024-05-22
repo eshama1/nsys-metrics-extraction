@@ -20,7 +20,7 @@ def file_args_checking(args):
     output_data = True
     file_labels = None
 
-    if args.data_file != None and args.na_file == None:
+    if args.data_file != None and args.nav_file == None:
         extract_data = True
 
     if extract_data:

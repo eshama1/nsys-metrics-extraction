@@ -237,10 +237,12 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
         stats = list(data_dict[configs[0]].keys())
         for stat in stats:
             if 'Total Duration' != stat:
-                temp_dict = {config: data_dict[config][stat] for config in configs}
+                temp_dict = {config: data_dict[config].get(stat) for config in configs}
+                temp_dict = {k: v for k, v in temp_dict.items() if v is not None}
                 temp_parent_dir = parent_dir + '/' + stat
-                os.makedirs ( temp_parent_dir, exist_ok=True )
-                generate_general_tables_and_figures ( temp_dict, temp_parent_dir, combined=True)
+                if len(temp_dict) >= 2:
+                    os.makedirs ( temp_parent_dir, exist_ok=True )
+                    generate_general_tables_and_figures ( temp_dict, temp_parent_dir, combined=True)
 
     if not no_general and not combined:
         logging.info ( f"Starting Overall Summary Figure and Table Generation" )

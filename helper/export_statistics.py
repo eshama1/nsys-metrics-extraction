@@ -53,7 +53,7 @@ def base_generate_tables_and_figures(data_dict, parent_dir, summary_combined_tab
                 temp_title = title + " " + metric + " " + sub_metric
                 if sub_metric == 'Distribution' and isinstance ( sub_stats, dict ):
                     if 'Duration' in metric or 'Slack' in metric or 'Overhead' in metric:
-                        units = ' (ns)'
+                        units = ' (us)'
                     else:
                         units = ''
                     xlabel = metric + units

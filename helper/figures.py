@@ -133,7 +133,7 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
     ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
     ax.xaxis.set_ticklabels ( labels )
     ax.tick_params ( axis='x', rotation=45 )
-    ax.set_xlabel ( "Configuration" )
+    ax.set_xlabel ( "Trace Name" )
 
     flat_data = [item for sublist in data for item in sublist]
     min_value = np.min ( flat_data )
@@ -194,7 +194,7 @@ def plot_combined_overall_bandwidth_distribution(combined_data, title, parent_di
     ax.xaxis.set_ticks ( range ( 1, len ( labels ) + 1 ) )
     ax.xaxis.set_ticklabels ( labels )
     ax.tick_params ( axis='x', rotation=45 )
-    ax.set_xlabel ( "Configuration" )
+    ax.set_xlabel ( "Trace Name" )
     ax.set_yscale ( 'log', base=10 )
     ax.yaxis.set_major_formatter ( ticker.FuncFormatter ( format_power_10_ticks ) )
     ax.set_ylabel ( "Bandwidth (B/s)" )

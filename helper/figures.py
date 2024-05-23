@@ -377,14 +377,15 @@ def plot_combined_frequency_distribution(combined_data, title, metric, parent_di
 
     ax.grid(axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
-    ax.set_title(f'{title}: {metric} Distribution by Transfer Size')
     ax.set_xticks(x + 0.5 * (num_configs - 1))
 
     if 'Size' in metric:
+        ax.set_title(f'{title}: {metric} Distribution by Size')
         ax.set_xlabel("Size (B)")
         bin_labels = [f'{convert_size ( left )} to {convert_size ( right )}' for left, right in
                       zip ( bin_edges[:-1], bin_edges[1:] )]
     else:
+        ax.set_title(f'{title}: {metric} Distribution by Duration')
         ax.set_xlabel("Time (us)")
         bin_labels = [f'{convert_duration ( left )} to {convert_duration ( right )}' for left, right in
                       zip ( bin_edges[:-1], bin_edges[1:] )]

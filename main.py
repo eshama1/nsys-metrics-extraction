@@ -41,6 +41,7 @@ def run(args):
             os.makedirs(dir, exist_ok=True)
             temp.append(dir)
         output_dir = temp
+        output_dir.append(output_dir_name)
     else:
         output_dir = f"./{output_dir_name}/" + files.split(".")[0] + "/"
         os.makedirs(output_dir, exist_ok=True)

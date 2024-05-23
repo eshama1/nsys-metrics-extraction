@@ -311,7 +311,7 @@ def generation_tables_and_figures(data_dict, no_comparison, no_general, no_speci
 
     if not no_comparison and num_files > 1:
         logging.info ( f"Starting Comparison Figure and Table Generation" )
-        temp_parent_dir = './output/Combined Statistics'
+        temp_parent_dir = './' + output_dir[-1] + '/Combined Statistics'
         os.makedirs ( temp_parent_dir, exist_ok=True )
         extract_general_dict(data_dict, temp_parent_dir, combined=True)
 

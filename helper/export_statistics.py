@@ -11,7 +11,9 @@ from helper.general import MAX_WORKERS
 from helper.tables import export_single_general_stat_to_latex, export_single_general_stat_to_CSV, \
     export_summary_stat_to_latex, export_summary_stat_to_CSV, export_overall_summary_stat_to_latex, \
     export_summary_summary_stat_to_CSV, export_combined_summary_stat_to_CSV, export_combined_summary_stat_to_latex, \
-    export_combined_overall_summary_stat_to_CSV, export_combined_overall_summary_stat_to_latex
+    export_combined_overall_summary_stat_to_CSV, export_combined_overall_summary_stat_to_latex, \
+    export_combined_overall_component_summary_stat_to_CSV, export_combined_overall_component_summary_stat_to_latex, \
+    export_combined_overall_duration_summary_stat_to_latex, export_combined_overall_duration_summary_stat_to_CSV
 
 # Ignore Future warnings
 warnings.filterwarnings ( 'ignore', category=FutureWarning )
@@ -97,7 +99,7 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
         labels = list(data_dict.keys())
         item_name = list(list(data_dict.values())[0].keys())
         individual = next((item for item in item_name if 'Individual' in item), None)
-        item_name = [item for item in item_name if 'Individual' not in item]
+        item_name = [item for item in item_name if isinstance(data_dict[next(iter(data_dict))][item], dict) and 'Individual' not in item]
         name = parent_dir.split ( '/' )[-1]
         raw_individual_data = {}
         item_dicts = {}
@@ -105,12 +107,23 @@ def base_generate_combined_tables_and_figures(data_dict, parent_dir, combined_in
         for metric in item_name:
             for label in labels:
                 data = []
-                keys = data_dict[label][individual].keys()
-                for key in keys:
-                    if data_dict[label][individual][key][metric] is not None and data_dict[label][individual][key][metric]['Raw Data'] is not None:
-                        data.extend ( data_dict[label][individual][key][metric]['Raw Data'] )
-                raw_individual_data[label] = data
-                item_dicts[label] = data_dict[label][metric]
+                if label in data_dict and individual in data_dict[label]:
+                    keys = data_dict[label][individual].keys()
+                    for key in keys:
+                        if key in data_dict[label][individual] and isinstance(data_dict[label][individual][key], dict):
+                            if metric in data_dict[label][individual][key] and isinstance(
+                                    data_dict[label][individual][key][metric], dict):
+                                metric_data = data_dict[label][individual][key][metric]
+                                if 'Raw Data' in metric_data:
+                                    raw_data = metric_data['Raw Data']
+                                    if raw_data is not None:
+                                        data.extend(raw_data)
+
+                if data:
+                    raw_individual_data[label] = data
+
+                if metric in data_dict[label] and isinstance(data_dict[label][metric], dict):
+                    item_dicts[label] = data_dict[label][metric]
 
             plot_combined_data ( raw_individual_data, name, metric, parent_dir, raw_provided=True)
             plot_combined_frequency_distribution( raw_individual_data, name, metric, parent_dir)
@@ -218,10 +231,39 @@ def export_overall_summary_tables(data_dict, parent_dir):
                             summary_stats[stats_names]['Time Total'] += sub_stats['Time Total']
                             summary_stats[stats_names]['Instance'] += sub_stats['Instance']
                             total_time += sub_stats['Time Total']
+            data_dict[stats_names]['Time Total'] = summary_stats[stats_names]['Time Total']
+            data_dict[stats_names]['Instance'] = summary_stats[stats_names]['Instance']
 
     summary_stats['Time Total'] = total_time
+    data_dict['Relative Time Total'] = total_time
     export_overall_summary_stat_to_latex ( summary_stats, parent_dir )
     export_summary_summary_stat_to_CSV ( summary_stats, parent_dir )
+
+
+def export_combined_overall_summary_tables(data_dict, parent_dir):
+    configs = list(data_dict.keys())
+    stats = list(data_dict[configs[0]].keys())
+    stats = [stat for stat in stats if isinstance(data_dict[configs[0]][stat], dict)]
+    summary_stats = {}
+
+    for stat in stats:
+        summary_stats = {}
+        for config in configs:
+            time_total = data_dict[config][stat].get('Time Total')
+            instance = data_dict[config][stat].get('Instance')
+            relative_total_time = data_dict[config].get('Relative Time Total')
+            if time_total is not None and instance is not None:
+                summary_stats[config] = {
+                    'Time Total': time_total,
+                    'Instance': instance,
+                    'Relative Total Time': relative_total_time
+                }
+
+        export_combined_overall_component_summary_stat_to_CSV ( summary_stats, stat, parent_dir )
+        export_combined_overall_component_summary_stat_to_latex ( summary_stats, stat, parent_dir )
+
+    export_combined_overall_duration_summary_stat_to_CSV(data_dict, parent_dir)
+    export_combined_overall_duration_summary_stat_to_latex(data_dict, parent_dir)
 
 
 def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=False, no_individual=False, combined=False):
@@ -238,7 +280,7 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
         for stat in stats:
             if 'Total Duration' != stat:
                 temp_dict = {config: data_dict[config].get(stat) for config in configs}
-                temp_dict = {k: v for k, v in temp_dict.items() if v is not None}
+                temp_dict = {k: v for k, v in temp_dict.items() if v is not None and isinstance(v, dict)}
                 temp_parent_dir = parent_dir + '/' + stat
                 if len(temp_dict) >= 2:
                     os.makedirs ( temp_parent_dir, exist_ok=True )
@@ -247,6 +289,9 @@ def extract_general_dict(data_dict, parent_dir, no_general=False, no_specific=Fa
     if not no_general and not combined:
         logging.info ( f"Starting Overall Summary Figure and Table Generation" )
         export_overall_summary_tables ( data_dict, parent_dir )
+    if not no_general and combined:
+        logging.info ( f"Starting Combined Overall Summary Figure and Table Generation" )
+        export_combined_overall_summary_tables ( data_dict, parent_dir )
 
 
 def generation_tables_and_figures(data_dict, no_comparison, no_general, no_specific, no_individual, num_files, output_dir):

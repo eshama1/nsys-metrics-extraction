@@ -130,7 +130,7 @@ def export_overall_summary_stat_to_latex(data_dict, parent_dir):
         latexfile.write ( "\\caption{Overall Application Duration Summary}\n" )
         latexfile.write ( "\\begin{tabular}{|c|c|c|c|}\n" )
         latexfile.write ( "\\hline\n" )
-        latexfile.write ("\\textbf{Name} & \\textbf{Total Relative Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} \\\\\n")
+        latexfile.write ("\\textbf{Name} & \\textbf{Individual Trace Duration (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} \\\\\n")
         latexfile.write ( "\\hline\n" )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
@@ -151,13 +151,83 @@ def export_summary_summary_stat_to_CSV(data_dict, parent_dir):
     with open ( csv_filename, 'w', newline='' ) as csvfile:
         writer = csv.writer ( csvfile )
         writer.writerow ( [f"Overall Application Duration Summary"] )
-        writer.writerow ( ['Name', 'Total Relative Time (%)', 'Total Time (us)', 'Instances'] )
+        writer.writerow ( ['Name', 'Individual Trace Duration (%)', 'Total Time (us)', 'Instances'] )
         for name, stats in data_dict.items():
             if isinstance(stats, dict):
                 time_duration = stats['Time Total']
                 instances = stats['Instance']
                 time_percent = round( time_duration / total_time * 100, 2)
                 writer.writerow ( [name, time_percent, time_duration, instances] )
+
+
+def export_combined_overall_component_summary_stat_to_latex(data_dict, stat, parent_dir):
+    latex_filename = parent_dir + '/overall_combined_' + stat.replace(' ', '_') + '_summary_statistics.tex'
+
+    with open ( latex_filename, 'w' ) as latexfile:
+        latexfile.write ( "\\begin{table}[ht]\n" )
+        latexfile.write ( "\\centering\n" )
+        latexfile.write ( "\\caption{Overall" + stat + " Duration Summary}\n" )
+        latexfile.write ( "\\begin{tabular}{|c|c|c|c|}\n" )
+        latexfile.write ( "\\hline\n" )
+        latexfile.write ("\\textbf{Trace Name} & \\textbf{Total Relative Time (\\%)} & \\textbf{Total Time (us)} & \\textbf{Instances} \\\\\n")
+        latexfile.write ( "\\hline\n" )
+        for name, stats in data_dict.items():
+            time_duration = stats['Time Total']
+            instances = stats['Instance']
+            relative_time = stats['Relative Total Time']
+            time_percent = round( time_duration / relative_time * 100, 2)
+            latexfile.write ( f"{name} & {time_percent} & {time_duration} & {instances} \\\\\n" )
+            latexfile.write ( "\\hline\n" )
+        latexfile.write ( "\\end{tabular}\n" )
+        latexfile.write ( "\\label{tab:overall_combined_" + stat.replace(' ', '_') + "_summary_statistics}\n" )
+        latexfile.write ( "\\end{table}\n" )
+
+
+def export_combined_overall_component_summary_stat_to_CSV(data_dict, stat, parent_dir):
+    csv_filename = parent_dir + '/overall_combined_' + stat.replace(' ', '_') + '_summary_statistics.csv'
+
+    with open ( csv_filename, 'w', newline='' ) as csvfile:
+        writer = csv.writer ( csvfile )
+        writer.writerow([f"Overall {stat} Duration Summary"])
+        writer.writerow ( ['Trace Name', 'Total Relative Time (%)', 'Total Time (us)', 'Instances'] )
+        for name, stats in data_dict.items():
+            time_duration = stats['Time Total']
+            instances = stats['Instance']
+            relative_time = stats['Relative Total Time']
+            time_percent = round(time_duration / relative_time * 100, 2)
+            writer.writerow ( [name, time_percent, time_duration, instances] )
+
+
+def export_combined_overall_duration_summary_stat_to_latex(data_dict, parent_dir):
+    latex_filename = parent_dir + '/overall_combined_duration_summary_statistics.tex'
+
+    with open ( latex_filename, 'w' ) as latexfile:
+        latexfile.write ( "\\begin{table}[ht]\n" )
+        latexfile.write ( "\\centering\n" )
+        latexfile.write ( "\\caption{Overall Trace Duration Summary}\n" )
+        latexfile.write ( "\\begin{tabular}{|c|c|}\n" )
+        latexfile.write ( "\\hline\n" )
+        latexfile.write ("\\textbf{Trace Name} & \\textbf{Total Time (us)} \\\\\n")
+        latexfile.write ( "\\hline\n" )
+        for name, stats in data_dict.items():
+            time_duration = stats['Total Duration']
+            latexfile.write ( f"{name} &  {time_duration} \\\\\n" )
+            latexfile.write ( "\\hline\n" )
+        latexfile.write ( "\\end{tabular}\n" )
+        latexfile.write ( "\\label{tab:overall_combined_duration_summary_statistics}\n" )
+        latexfile.write ( "\\end{table}\n" )
+
+
+def export_combined_overall_duration_summary_stat_to_CSV(data_dict, parent_dir):
+    csv_filename = parent_dir + '/overall_combined_duration_summary_statistics.csv'
+
+    with open ( csv_filename, 'w', newline='' ) as csvfile:
+        writer = csv.writer ( csvfile )
+        writer.writerow([f"Overall Trace Duration Summary"])
+        writer.writerow ( ['Trace Name', 'Total Time (us)'] )
+        for name, stats in data_dict.items():
+            time_duration = stats['Total Duration']
+            writer.writerow ( [name, time_duration] )
 
 
 def export_combined_summary_stat_to_latex(data_dict, parent_dir, title, stat_name):
@@ -271,11 +341,11 @@ def export_combined_overall_summary_stat_to_CSV(data_dict, parent_dir, title, st
         writer.writerow ( [f"{title} Combined {stat_name} Summary Statistics"] )
         if 'Duration' in stat_name or 'Slack' in stat_name or 'Overhead' in stat_name:
             writer.writerow (
-                ['Configuration', 'Mean (us)', 'Median (us)', 'Minimum (us)',
+                ['Trace Name', 'Mean (us)', 'Median (us)', 'Minimum (us)',
                  'Maximum (us)', 'Standard Deviation'] )
         else:
             writer.writerow (
-                ['Configuration', 'Mean (B)', 'Median (B)', 'Minimum (B)',
+                ['Trace Name', 'Mean (B)', 'Median (B)', 'Minimum (B)',
                  'Maximum (B)', 'Standard Deviation'] )
 
         for metric_name, stats in data_dict.items ():

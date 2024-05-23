@@ -111,7 +111,8 @@ def plot_combined_data(combined_data, title, metric, parent_dir, raw_provided=Fa
             data.append ( sub_list )
 
     if len ( data ) < 2:
-        logging.error ( f'Raw Data Missing for: {title} Combined {metric}' )
+        logging.error ( f'\"{title}: Combined {metric}\" - Only 1 Raw Data found, No figure generated' )
+        return None
 
     fig, ax = plt.subplots ( 1, figsize=(10, 10) )
     parts = ax.violinplot ( data, showmeans=True, showmedians=True )

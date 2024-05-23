@@ -276,6 +276,10 @@ def create_histogram(data, bins=10, powers_2=False, base=False, convert_bytes=Fa
             else:
                 bin_labels = [f'{convert_duration(data[0])}']
 
+        for sublist in hist:
+            if not sublist:
+                sublist.append(0)
+
         histogram_data = {
             "Bin Centers": bin_centers,
             "Histogram": hist,

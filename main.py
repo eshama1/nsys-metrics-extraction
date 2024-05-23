@@ -8,7 +8,9 @@ from helper.general import *
 from helper.export_statistics import generation_tables_and_figures
 
 # General Flags
+flags.DEFINE_string('output_dir', "output", "Name of directory to save generated NAV files and export Tables and Figures (default: ./output)", short_name='o')
 flags.DEFINE_string('multi_data_label', None, "(REQUIRED for multi-files) Labels for each database/json file provided to distinguish in statistics ex:(1 GPU, 2 GPU, 3 GPU), commas used to split names and order must be same as provided files", short_name='mdl')
+flags.DEFINE_integer('max_workers', None, "Number of threads to split work (Default to CPU count)", short_name='mw')
 
 # Extraction Flags
 flags.DEFINE_string('data_file', None, "Data Base file for extraction (sqlite)", short_name='df')
@@ -24,23 +26,23 @@ flags.DEFINE_boolean('no_compare_metrics_output', False, "disable comparison met
 flags.DEFINE_boolean('no_general_metrics_output', False, "disable general metrics export (Kernel, Transfer, Communication)", short_name='ngmo')
 flags.DEFINE_boolean('no_specific_metrics_output', False, "disable specific metrics export (Duration, Size, Slack, Overhead, etc)", short_name='nsmo')
 flags.DEFINE_boolean('no_individual_metrics_output', False, "disable individual metrics export (individual kernel, transfer, communication statistics)", short_name='nimo')
-flags.DEFINE_integer('max_workers', None, "Number of threads to split work (Default to CPU count)", short_name='mw')
 
 FLAGS = flags.FLAGS
 
 def run(args):
     files, num_files, file_labels, output_data, extract_data = file_args_checking(args)
     output_dir = None
+    output_dir_name = FLAGS.output_dir
 
     if num_files > 1:
         temp = []
         for label in file_labels:
-            dir = f"./output/{label}/"
+            dir = f"./{output_dir_name}/{label}/"
             os.makedirs(dir, exist_ok=True)
             temp.append(dir)
         output_dir = temp
     else:
-        output_dir = f"./output/" + files.split(".")[0] + "/"
+        output_dir = f"./{output_dir_name}/" + files.split(".")[0] + "/"
         os.makedirs(output_dir, exist_ok=True)
 
     extracted_data = {}

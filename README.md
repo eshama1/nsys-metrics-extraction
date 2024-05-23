@@ -60,6 +60,7 @@ python3 main.py -jf "file1.json file2.json file3.json" -mdl "Label1,Label2,Label
 ## Flags Overview
 
 ### General Flags
+- **output_dir** (`-o`): Name of directory to save generated NAV files and export Tables and Figures (default: ./output)
 - **multi_data_label** (`-mdl`): *(REQUIRED for multi-files)* Labels for each database/JSON file provided to distinguish in statistics. Example: (1 GPU, 2 GPU, 3 GPU). Use commas to split names, and ensure the order matches the provided files.
 - **max_workers** (`-mw`): Specifies the number of threads to split work (Defaults to CPU count if not set).
 

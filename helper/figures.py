@@ -331,6 +331,7 @@ def plot_frequency_distribution(histogram_data, title, xlabel, parent_dir):
     ax.tick_params ( axis='x', rotation=45 )
     ax.grid ( axis='y', linestyle='--', linewidth=0.5, color='gray', alpha=0.5 )
     ax.grid(which='minor', axis='y', linestyle=':', linewidth=0.5, color='lightgray')
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(format_power_10_ticks))
     ax.set_title ( title )
     ax.set_xlabel ( xlabel )
     ax.set_ylabel ( "Frequency" )

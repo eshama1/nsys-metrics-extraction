@@ -207,7 +207,7 @@ def export_combined_overall_duration_summary_stat_to_latex(data_dict, parent_dir
         latexfile.write ( "\\caption{Overall Trace Duration Summary}\n" )
         latexfile.write ( "\\begin{tabular}{|c|c|}\n" )
         latexfile.write ( "\\hline\n" )
-        latexfile.write ("\\textbf{Trace Name} & \\textbf{Total Time (us)} \\\\\n")
+        latexfile.write ("\\textbf{Trace Name} & \\textbf{Total Trace Time (us)} \\\\\n")
         latexfile.write ( "\\hline\n" )
         for name, stats in data_dict.items():
             time_duration = stats['Total Duration']
@@ -224,7 +224,7 @@ def export_combined_overall_duration_summary_stat_to_CSV(data_dict, parent_dir):
     with open ( csv_filename, 'w', newline='' ) as csvfile:
         writer = csv.writer ( csvfile )
         writer.writerow([f"Overall Trace Duration Summary"])
-        writer.writerow ( ['Trace Name', 'Total Time (us)'] )
+        writer.writerow ( ['Trace Name', 'Total Trace Time (us)'] )
         for name, stats in data_dict.items():
             time_duration = stats['Total Duration']
             writer.writerow ( [name, time_duration] )

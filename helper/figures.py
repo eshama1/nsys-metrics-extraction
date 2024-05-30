@@ -7,6 +7,11 @@ from sklearn.cluster import KMeans
 
 from helper.general import convert_size, convert_duration
 
+plt.rcParams.update({
+    'font.size': 12,
+    'axes.titlesize': 14, 
+})
+
 
 def format_power_2_ticks(value, _):
     if value >= 2 ** 50:

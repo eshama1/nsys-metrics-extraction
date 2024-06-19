@@ -8,8 +8,8 @@ from sklearn.cluster import KMeans
 from helper.general import convert_size, convert_duration
 
 plt.rcParams.update({
-    'font.size': 12,
-    'axes.titlesize': 14, 
+    'font.size': 14,
+    'axes.titlesize': 16,
 })
 
 
